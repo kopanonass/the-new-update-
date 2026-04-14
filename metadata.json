@@ -1,0 +1,6 @@
+{
+  "name": "Orbit Collage Student AI",
+  "description": "A creative AI assistant powered by kgomotso diphoko the 🍌, featuring image generation and editing.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": []
+}
