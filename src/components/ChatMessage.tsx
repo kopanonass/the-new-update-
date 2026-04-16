@@ -2,7 +2,7 @@ import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
 import { cn } from '../lib/utils';
-import { User, Bot, Edit2, FileText, Download, Presentation, Table, Sparkles } from 'lucide-react';
+import { User, Bot, Edit2, FileText, Download, Presentation, Table, Sparkles, Share2, MessageCircle } from 'lucide-react';
 
 interface ChatMessageProps {
   role: 'user' | 'model';
@@ -15,6 +15,8 @@ interface ChatMessageProps {
   onDownloadPPT?: (content: string) => void;
   onDownloadExcel?: (content: string) => void;
   onDownloadImage?: (url: string) => void;
+  onShareWhatsApp?: (content: string) => void;
+  onShareMore?: (content: string) => void;
 }
 
 export default function ChatMessage({ 
@@ -27,7 +29,9 @@ export default function ChatMessage({
   onDownloadPDF, 
   onDownloadPPT,
   onDownloadExcel,
-  onDownloadImage 
+  onDownloadImage,
+  onShareWhatsApp,
+  onShareMore
 }: ChatMessageProps) {
   const isUser = role === 'user';
   const showExportButtons = !isUser && action === 'summarize';
@@ -129,6 +133,24 @@ export default function ChatMessage({
                   >
                     <Table size={14} />
                     Excel
+                  </button>
+                )}
+                {onShareWhatsApp && (
+                  <button
+                    onClick={() => onShareWhatsApp(content)}
+                    className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-zinc-100 bg-green-600/20 hover:bg-green-600 text-green-600 hover:text-white transition-all px-4 py-2 rounded-xl border border-green-600/30"
+                  >
+                    <MessageCircle size={14} />
+                    WhatsApp
+                  </button>
+                )}
+                {onShareMore && (
+                  <button
+                    onClick={() => onShareMore(content)}
+                    className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-zinc-100 bg-blue-500/20 hover:bg-blue-500 text-blue-500 hover:text-white transition-all px-4 py-2 rounded-xl border border-blue-500/30"
+                  >
+                    <Share2 size={14} />
+                    Share
                   </button>
                 )}
               </div>

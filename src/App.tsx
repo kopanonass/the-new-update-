@@ -96,15 +96,33 @@ export default function App() {
       if (action === 'summarize' && image) {
         const isPdf = image.startsWith('data:application/pdf');
         const summaryPrompt = `
-          Pro academic summary of this ${isPdf ? 'PDF' : 'image'}.
-          Rules:
-          1. # TOPIC NAME
-          2. ## <u>Heading</u> (Underline with <u>)
-          3. Term -> Meaning (One per line)
-          4. Point form summaries (* or 1.)
-          5. -> Key takeaways
-          6. .................... (Section separators)
-          7. Professional, concise, thorough.
+          You are a professional academic assistant and expert document analyst. 
+          Please provide a high-level, "Pro" summary of this ${isPdf ? 'PDF document' : 'image'}.
+          
+          CRITICAL INSTRUCTIONS:
+          1. OCR & EXTRACTION: If the document contains scanned text, images, or handwriting, perform a detailed OCR extraction to ensure no key information is missed.
+          2. STRUCTURE: Present the information in a highly structured, logical flow.
+          
+          Follow these strict formatting rules:
+          1. TOPIC HEADER: Start with the topic name as a main header (e.g., # TOPIC NAME).
+          2. HEADINGS: Use <u> tags to underline the Main Heading and all Sub-headings (e.g., ## <u>Main Heading</u>).
+          3. MEANINGS/DEFINITIONS: For any term or concept, write it as: "Term -> Meaning" on its own line.
+          4. POINT FORM: Do not write long paragraphs. Summarize all information into clear, professional point forms using bullet points (*) or numbered lists (1.).
+          5. KEY POINTS: Use arrows (->) for key takeaways.
+          6. SEPARATORS: Use dotted lines (....................) to separate major sections.
+          7. STYLE: Write like a professional expert. Be concise but thorough.
+          
+          Example:
+          # ARTIFICIAL INTELLIGENCE
+          ....................
+          ## <u>Introduction</u>
+          * AI -> The simulation of human intelligence by machines.
+          * Machine Learning -> A subset of AI focused on data patterns.
+          
+          ## <u>Key Concepts</u>
+          1. Neural Networks -> Modeled after the human brain.
+          -> AI is transforming modern technology.
+          ....................
         `;
         responseText = await chatWithGemini(summaryPrompt, [], image) || `I couldn't summarize that ${isPdf ? 'PDF' : 'image'}.`;
       } else if (action === 'edit' && image) {
@@ -381,6 +399,34 @@ export default function App() {
     triggerConfetti();
   };
 
+  const handleShareWhatsApp = (content: string) => {
+    const text = encodeURIComponent(`*Orbit Pro Summary*\n\n${content.replace(/<u>|<\/u>/g, '')}`);
+    window.open(`https://wa.me/?text=${text}`, '_blank');
+  };
+
+  const handleShareMore = async (content: string) => {
+    const cleanContent = content.replace(/<u>|<\/u>/g, '');
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Orbit Pro Summary',
+          text: cleanContent,
+          url: window.location.href
+        });
+      } catch (err) {
+        console.error('Error sharing:', err);
+      }
+    } else {
+      // Fallback: Copy to clipboard
+      try {
+        await navigator.clipboard.writeText(cleanContent);
+        alert('Summary copied to clipboard!');
+      } catch (err) {
+        console.error('Failed to copy:', err);
+      }
+    }
+  };
+
   const triggerConfetti = () => {
     const duration = 3 * 1000;
     const animationEnd = Date.now() + duration;
@@ -532,6 +578,8 @@ export default function App() {
                   onDownloadPPT={handleDownloadPPT}
                   onDownloadExcel={handleDownloadExcel}
                   onDownloadImage={handleDownloadImage}
+                  onShareWhatsApp={handleShareWhatsApp}
+                  onShareMore={handleShareMore}
                 />
               ))}
               {isLoading && (
