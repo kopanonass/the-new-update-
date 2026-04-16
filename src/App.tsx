@@ -203,12 +203,18 @@ export default function App() {
           ? { ...c, messages: [...c.messages, modelMessage] }
           : c
       ));
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
+      let content = "Oops! Orbit Collage Student AI encountered a technical glitch. This can happen with complex image edits. Please try a simpler prompt or try again in a moment! 🍌";
+      
+      if (error?.message?.includes('API_KEY_MISSING')) {
+        content = "⚠️ **API Key Missing**: It looks like the Gemini API Key is not set up on your Vercel deployment. Please add `GEMINI_API_KEY` to your Vercel Environment Variables and redeploy your app.";
+      }
+
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'model',
-        content: "Oops! Orbit Collage Student AI encountered a technical glitch. This can happen with complex image edits. Please try a simpler prompt or try again in a moment! 🍌"
+        content: content
       };
       setChats(prev => prev.map(c => 
         c.id === (currentChatId || prev[0].id) 

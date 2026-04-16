@@ -1,8 +1,21 @@
 import { GoogleGenAI, ThinkingLevel } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const getApiKey = () => {
+  const key = process.env.GEMINI_API_KEY;
+  if (!key || key === 'MY_GEMINI_API_KEY' || key.includes('TODO')) {
+    return null;
+  }
+  return key;
+};
+
+const ai = new GoogleGenAI({ 
+  apiKey: getApiKey() || 'MISSING_KEY' 
+});
 
 export async function chatWithGemini(prompt: string, history: { role: 'user' | 'model', parts: { text: string }[] }[] = [], base64Data?: string) {
+  if (!getApiKey()) {
+    throw new Error("API_KEY_MISSING");
+  }
   try {
     const parts: any[] = [{ text: prompt }];
 
@@ -31,6 +44,9 @@ export async function chatWithGemini(prompt: string, history: { role: 'user' | '
 }
 
 export async function generateImage(prompt: string, base64Image?: string) {
+  if (!getApiKey()) {
+    throw new Error("API_KEY_MISSING");
+  }
   try {
     const parts: any[] = [{ text: prompt }];
     
@@ -45,7 +61,7 @@ export async function generateImage(prompt: string, base64Image?: string) {
 
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash-image",
-      contents: { parts: parts },
+      contents: [{ role: 'user', parts: parts }],
     });
 
     for (const part of response.candidates?.[0]?.content?.parts || []) {
