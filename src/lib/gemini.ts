@@ -33,7 +33,8 @@ export async function chatWithGemini(prompt: string, history: { role: 'user' | '
       model: "gemini-3.1-flash-lite-preview",
       contents: [...history, { role: 'user', parts: parts }],
       config: {
-        thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL }
+        thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
+        systemInstruction: "You are Orbit Collage Student AI, powered by NanoBanana Pro. If the user asks to create, draw, or generate an image, do NOT respond with JSON or tool calls. Instead, simply describe the image you are about to create. The system will handle the actual generation."
       }
     });
     return response.text;

@@ -139,6 +139,9 @@ export default function App() {
         const isImageRequest = prompt.includes('generate') || 
                               prompt.includes('create') || 
                               prompt.includes('draw') || 
+                              prompt.includes('visualize') ||
+                              prompt.includes('show me') ||
+                              prompt.includes('render') ||
                               prompt.includes('make an image') ||
                               prompt.includes('picture of') ||
                               prompt.includes('add a') ||
@@ -168,20 +171,33 @@ export default function App() {
         }
       }
 
-      // Handle raw JSON responses (tool calls) from the model
-      if (responseText.trim().startsWith('{') && responseText.trim().endsWith('}')) {
+      // Handle raw JSON responses or tool calls from the model
+      if (responseText.trim().startsWith('{')) {
         try {
-          const json = JSON.parse(responseText);
-          if (json.action === 'dalle.text2im' || json.action_input) {
-            const innerPrompt = typeof json.action_input === 'string' 
-              ? (json.action_input.includes('prompt') ? JSON.parse(json.action_input).prompt : json.action_input)
-              : json.action_input?.prompt;
-            
-            if (innerPrompt) {
-              const retryImageUrl = await generateImage(innerPrompt, image);
-              if (retryImageUrl) {
-                responseImage = retryImageUrl;
-                responseText = json.thought || "I've generated the image you requested! 🍌✨";
+          // Try to extract prompt using regex if JSON is malformed (common with nested quotes)
+          const promptMatch = responseText.match(/"prompt":\s*"([^"]+)"/);
+          const innerPrompt = promptMatch ? promptMatch[1] : null;
+          
+          if (innerPrompt) {
+            const retryImageUrl = await generateImage(innerPrompt, image);
+            if (retryImageUrl) {
+              responseImage = retryImageUrl;
+              responseText = "I've generated the professional image you requested using NanoBanana Pro! 🍌✨";
+            }
+          } else {
+            // Try standard JSON parse if regex fails
+            const json = JSON.parse(responseText);
+            if (json.action === 'dalle.text2im' || json.action_input) {
+              const toolPrompt = typeof json.action_input === 'string' 
+                ? (json.action_input.includes('prompt') ? JSON.parse(json.action_input).prompt : json.action_input)
+                : json.action_input?.prompt;
+              
+              if (toolPrompt) {
+                const retryImageUrl = await generateImage(toolPrompt, image);
+                if (retryImageUrl) {
+                  responseImage = retryImageUrl;
+                  responseText = json.thought || "I've generated the image you requested! 🍌✨";
+                }
               }
             }
           }
