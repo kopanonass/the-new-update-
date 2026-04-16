@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, Search, Settings, Share2, MoreVertical, Sparkles, MessageSquare, Image as ImageIcon } from 'lucide-react';
+import { Menu, X, Search, Settings, Share2, MoreVertical, Sparkles, MessageSquare, Image as ImageIcon } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import ChatInput from './components/ChatInput';
 import ChatMessage from './components/ChatMessage';
@@ -150,7 +150,7 @@ export default function App() {
           const generatedImageUrl = await generateImage(enhancedPrompt, image);
           if (generatedImageUrl) {
             responseImage = generatedImageUrl;
-            responseText = "Here is the high-quality image I created for you with Orbit Collage Student AI & Nano Banana! 🍌✨";
+            responseText = "Here is the professional, high-quality image I created for you using NanoBanana Pro! 🍌✨";
           } else {
             // If image generation failed, try normal chat as fallback
             const history = currentChat?.messages.map(m => ({
@@ -479,35 +479,36 @@ export default function App() {
         {/* Top Navigation */}
         <header className="h-16 border-b border-zinc-800 flex items-center justify-between px-4 bg-black/80 backdrop-blur-md z-30">
           <div className="flex items-center gap-4">
-            {!isSidebarOpen && (
-              <button 
-                onClick={() => setIsSidebarOpen(true)}
-                className="p-2 hover:bg-zinc-800 rounded-lg transition-colors"
-              >
-                <Menu size={20} />
-              </button>
-            )}
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-yellow-400 rounded-lg flex items-center justify-center text-black text-sm">
+            <button 
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="p-2 hover:bg-zinc-800 rounded-lg transition-colors text-zinc-400 hover:text-yellow-400"
+            >
+              {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+            
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-yellow-400 rounded-lg flex items-center justify-center text-black text-sm shadow-lg shadow-yellow-400/20">
                 🍌
               </div>
               <div className="flex flex-col">
-                <span className="font-bold text-lg tracking-tight leading-none">
-                  {currentChat?.title || "Orbit Collage Student AI"}
-                </span>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-                  <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest">Ultra Fast Mode Active</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-lg tracking-tight leading-none text-white">
+                    {currentChat?.title || "Orbit Collage Student AI"}
+                  </span>
+                  <div className="bg-yellow-400 text-black text-[9px] font-black px-1.5 py-0.5 rounded shadow-sm uppercase tracking-tighter">
+                    Pro
+                  </div>
                 </div>
-              </div>
-              <div className="bg-yellow-400/10 text-yellow-400 text-[10px] font-bold px-1.5 py-0.5 rounded border border-yellow-400/20 uppercase tracking-wider">
-                Pro
+                <div className="flex items-center gap-1.5 mt-1">
+                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
+                  <span className="text-[8px] text-zinc-500 font-black uppercase tracking-[0.2em]">Ultra Fast Mode Active</span>
+                </div>
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Icons removed as requested */}
+            {/* Right side actions if any */}
           </div>
         </header>
 

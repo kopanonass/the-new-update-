@@ -60,8 +60,14 @@ export async function generateImage(prompt: string, base64Image?: string) {
     }
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-image",
+      model: "gemini-3-pro-image-preview",
       contents: [{ role: 'user', parts: parts }],
+      config: {
+        imageConfig: {
+          imageSize: "1K",
+          aspectRatio: "1:1"
+        }
+      }
     });
 
     for (const part of response.candidates?.[0]?.content?.parts || []) {

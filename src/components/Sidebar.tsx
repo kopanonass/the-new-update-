@@ -54,7 +54,7 @@ export default function Sidebar({ isOpen, onClose, onNewChat, chatHistory, curre
             </motion.div>
             <span>Orbit Collage Student AI</span>
           </div>
-          <button onClick={onClose} className="lg:hidden p-2 hover:bg-zinc-800 rounded-full transition-colors">
+          <button onClick={onClose} className="p-2 hover:bg-zinc-800 rounded-full transition-colors text-zinc-500 hover:text-white">
             <X size={20} />
           </button>
         </div>
