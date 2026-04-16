@@ -2,6 +2,7 @@ import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
 import { cn } from '../lib/utils';
+import { motion } from 'motion/react';
 import { User, Bot, Edit2, FileText, Download, Presentation, Table, Sparkles, Share2, MessageCircle } from 'lucide-react';
 
 interface ChatMessageProps {
@@ -37,11 +38,19 @@ export default function ChatMessage({
   const showExportButtons = !isUser && action === 'summarize';
 
   return (
-    <div className={cn(
-      "flex w-full gap-4 p-6 transition-colors group",
-      isUser ? "bg-transparent" : "bg-zinc-900/50 border-y border-zinc-800/50"
-    )}>
-      <div className="max-w-4xl mx-auto w-full flex gap-4 md:gap-6">
+    <motion.div 
+      initial={{ opacity: 0, y: 20, x: isUser ? 20 : -20 }}
+      animate={{ opacity: 1, y: 0, x: 0 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+      className={cn(
+        "flex w-full gap-4 p-6 transition-colors group",
+        isUser ? "bg-transparent justify-end" : "bg-zinc-900/50 border-y border-zinc-800/50 justify-start"
+      )}
+    >
+      <div className={cn(
+        "max-w-4xl w-full flex gap-4 md:gap-6",
+        isUser ? "flex-row-reverse" : "flex-row"
+      )}>
         <div className={cn(
           "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-sm",
           isUser ? "bg-zinc-800 text-zinc-400" : "bg-yellow-400 text-black"
@@ -49,9 +58,15 @@ export default function ChatMessage({
           {isUser ? <User size={18} /> : <Bot size={18} />}
         </div>
         
-        <div className="flex-1 space-y-4 overflow-hidden">
+        <div className={cn(
+          "flex-1 space-y-4 overflow-hidden",
+          isUser ? "text-right" : "text-left"
+        )}>
           {image && (
-            <div className="relative group/img max-w-md">
+            <div className={cn(
+              "relative group/img max-w-md",
+              isUser ? "ml-auto" : "mr-auto"
+            )}>
               <div className="rounded-2xl overflow-hidden border border-zinc-800 shadow-xl">
                 {image.startsWith('data:application/pdf') ? (
                   <div className="w-full aspect-video bg-red-500/5 flex flex-col items-center justify-center text-red-500 gap-2">
@@ -107,7 +122,10 @@ export default function ChatMessage({
             </div>
 
             {showExportButtons && (
-              <div className="mt-6 flex flex-wrap gap-3">
+              <div className={cn(
+                "mt-6 flex flex-wrap gap-3",
+                isUser ? "justify-end" : "justify-start"
+              )}>
                 {onDownloadPDF && (
                   <button
                     onClick={() => onDownloadPDF(content)}
@@ -158,6 +176,6 @@ export default function ChatMessage({
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
