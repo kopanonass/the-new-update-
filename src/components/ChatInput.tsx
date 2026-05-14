@@ -4,20 +4,42 @@ import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface ChatInputProps {
-  onSend: (message: string, image?: string, action?: 'summarize' | 'edit') => void;
+  onSend: (message: string, image?: string, action?: 'summarize' | 'edit', language?: string) => void;
   onManualEdit: (image: string) => void;
   image: string | null;
   onImageChange: (image: string | null) => void;
   initialAction?: 'summarize' | 'edit' | null;
   disabled?: boolean;
+  accentStyle?: 'static' | 'flow';
 }
 
-export default function ChatInput({ onSend, onManualEdit, image, onImageChange, initialAction, disabled }: ChatInputProps) {
+export default function ChatInput({ 
+  onSend, 
+  onManualEdit, 
+  image, 
+  onImageChange, 
+  initialAction, 
+  disabled,
+  accentStyle = 'static'
+}: ChatInputProps) {
   const [message, setMessage] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [selectedAction, setSelectedAction] = useState<'summarize' | 'edit' | null>(null);
+  const [selectedLanguage, setSelectedLanguage] = useState<'English' | 'Zulu' | 'Setswana' | 'French' | 'Spanish' | 'German' | 'Afrikaans' | 'Xhosa' | 'Sotho'>('English');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
+
+  const languages = [
+    { id: 'English', label: 'English' },
+    { id: 'Zulu', label: 'Zulu' },
+    { id: 'Setswana', label: 'Setswana' },
+    { id: 'French', label: 'French' },
+    { id: 'Spanish', label: 'Spanish' },
+    { id: 'German', label: 'German' },
+    { id: 'Afrikaans', label: 'Afrikaans' },
+    { id: 'Xhosa', label: 'Xhosa' },
+    { id: 'Sotho', label: 'Sotho' },
+  ];
 
   useEffect(() => {
     if (initialAction) {
@@ -81,7 +103,7 @@ export default function ChatInput({ onSend, onManualEdit, image, onImageChange, 
 
   const handleSend = () => {
     if ((message.trim() || image) && !disabled) {
-      onSend(message, image || undefined, selectedAction || undefined);
+      onSend(message, image || undefined, selectedAction || undefined, selectedAction === 'summarize' ? selectedLanguage : undefined);
       setMessage('');
       onImageChange(null);
       setSelectedAction(null);
@@ -113,22 +135,7 @@ export default function ChatInput({ onSend, onManualEdit, image, onImageChange, 
 
   return (
     <div className="max-w-5xl mx-auto w-full p-4 relative">
-      {/* Animated Border Background - Enhanced Glow */}
-      <div className="absolute inset-4 rounded-3xl overflow-hidden pointer-events-none">
-        <motion.div
-          animate={{
-            rotate: [0, 360],
-            scale: [1, 1.1, 1],
-          }}
-          transition={{
-            rotate: { duration: 6, repeat: Infinity, ease: "linear" },
-            scale: { duration: 4, repeat: Infinity, ease: "easeInOut" }
-          }}
-          className="absolute -inset-[150%] bg-[conic-gradient(from_0deg,#eab308,#3b82f6,#a855f7,#ec4899,#eab308)] opacity-30 blur-2xl"
-        />
-      </div>
-
-      <div className="relative flex flex-col bg-zinc-950/40 backdrop-blur-2xl rounded-3xl transition-all group border border-white/10 focus-within:border-yellow-400/40 focus-within:bg-zinc-900/40 shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)]">
+      <div className="relative flex flex-col bg-zinc-900/50 dark:bg-zinc-950/40 backdrop-blur-3xl rounded-[2rem] transition-all group border border-zinc-500/20 focus-within:border-yellow-400/50 shadow-2xl">
         {image && (
           <div className="p-4 flex flex-col gap-4 border-b border-white/5">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -227,10 +234,31 @@ export default function ChatInput({ onSend, onManualEdit, image, onImageChange, 
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="text-[10px] text-yellow-400/80 font-medium flex items-center gap-2"
+                  className="space-y-3"
                 >
-                  <FileText size={10} />
-                  Orbit will summarize this {isPdf ? 'PDF' : 'image'} and provide export options
+                  <div className="text-[10px] text-yellow-400/80 font-medium flex items-center gap-2">
+                    <FileText size={10} />
+                    Orbit will summarize this {isPdf ? 'PDF' : 'image'} in your preferred language
+                  </div>
+                  <div className="flex flex-col space-y-2">
+                    <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest pl-1">Target Language</p>
+                    <div className="flex flex-wrap gap-1.5 pl-0.5">
+                      {languages.map((lang) => (
+                        <button
+                          key={lang.id}
+                          onClick={() => setSelectedLanguage(lang.id as any)}
+                          className={cn(
+                            "px-3 py-1 rounded-lg text-[10px] font-bold transition-all border",
+                            selectedLanguage === lang.id
+                              ? "bg-yellow-400 text-black border-yellow-400"
+                              : "bg-white/5 text-zinc-500 border-zinc-500/20 hover:border-zinc-500/40"
+                          )}
+                        >
+                          {lang.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -288,21 +316,16 @@ export default function ChatInput({ onSend, onManualEdit, image, onImageChange, 
           />
 
           <motion.button
-            whileHover={message.trim() || image ? { scale: 1.05, backgroundColor: "#eab308" } : {}}
+            whileHover={message.trim() || image ? { scale: 1.05 } : {}}
             whileTap={message.trim() || image ? { scale: 0.95 } : {}}
-            animate={message.trim() || image ? { 
-              boxShadow: ["0 0 0px rgba(234,179,8,0)", "0 0 20px rgba(234,179,8,0.4)", "0 0 0px rgba(234,179,8,0)"] 
-            } : {}}
-            transition={{
-              boxShadow: { duration: 2, repeat: Infinity, ease: "easeInOut" }
-            }}
             onClick={handleSend}
             disabled={(!message.trim() && !image) || disabled}
             className={cn(
-              "p-3 rounded-xl transition-all flex items-center justify-center relative overflow-hidden",
+              "p-3 rounded-xl transition-all flex items-center justify-center relative overflow-hidden btn-animated",
               message.trim() || image
-                ? "bg-yellow-400 text-black"
-                : "bg-white/5 text-zinc-600 cursor-not-allowed"
+                ? "bg-accent text-black shadow-lg shadow-accent/20"
+                : "bg-white/5 text-zinc-600 cursor-not-allowed",
+              accentStyle === 'flow' && "accent-flow"
             )}
           >
             {disabled ? (
@@ -326,9 +349,6 @@ export default function ChatInput({ onSend, onManualEdit, image, onImageChange, 
         accept="image/*"
         className="hidden"
       />
-      <p className="text-[10px] text-zinc-600 text-center mt-2 uppercase tracking-widest font-medium">
-        Orbit Collage Student AI can generate and edit images too
-      </p>
     </div>
   );
 }

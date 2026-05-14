@@ -53,7 +53,7 @@ export default function ChatMessage({
       )}>
         <div className={cn(
           "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-sm",
-          isUser ? "bg-zinc-800 text-zinc-400" : "bg-yellow-400 text-black"
+          isUser ? "bg-zinc-800 text-zinc-400" : "bg-accent text-black"
         )}>
           {isUser ? <User size={18} /> : <Bot size={18} />}
         </div>

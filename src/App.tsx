@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, X, Search, Settings, Share2, MoreVertical, Sparkles, MessageSquare, Image as ImageIcon } from 'lucide-react';
+import { Menu, X, Search, Settings, Share2, MoreVertical, Sparkles, MessageSquare, Image as ImageIcon, ArrowLeft } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import ChatInput from './components/ChatInput';
 import ChatMessage from './components/ChatMessage';
@@ -16,6 +16,10 @@ import { jsPDF } from 'jspdf';
 import PptxGenJS from 'pptxgenjs';
 import * as XLSX from 'xlsx';
 import confetti from 'canvas-confetti';
+import Auth from './components/Auth';
+import { LogOut, User as UserIcon, History as HistoryIcon, LayoutGrid } from 'lucide-react';
+import { ProfileView, SettingsView, HistoryView } from './components/NavigationViews';
+import { cn } from './lib/utils';
 
 interface Message {
   id: string;
@@ -33,6 +37,15 @@ interface Chat {
 
 export default function App() {
   const [showWelcome, setShowWelcome] = useState(true);
+  const [showAuth, setShowAuth] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
+  const [currentView, setCurrentView] = useState<'home' | 'history' | 'profile' | 'settings'>('home');
+  const [theme, setTheme] = useState<'dark' | 'light' | 'white' | 'dim'>('dark');
+  const [accentColor, setAccentColor] = useState<string>('#eab308'); // Default yellow
+  const [accentStyle, setAccentStyle] = useState<'static' | 'flow'>('static');
+  const [fontStyle, setFontStyle] = useState<'sans' | 'editorial' | 'tech'>('sans');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [chats, setChats] = useState<Chat[]>([]);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
@@ -46,6 +59,65 @@ export default function App() {
   const currentChat = chats.find(c => c.id === currentChatId);
 
   useEffect(() => {
+    const savedToken = localStorage.getItem('orbit_token');
+    const savedUser = localStorage.getItem('orbit_user');
+    if (savedToken && savedUser) {
+      setToken(savedToken);
+      setUser(JSON.parse(savedUser));
+    }
+    setAuthChecked(true);
+
+    // Apply basic body classes for theme
+    document.body.className = theme;
+  }, [theme]);
+
+  useEffect(() => {
+    if (!token) {
+      setChats([]);
+      setCurrentChatId(null);
+      return;
+    }
+
+    const fetchChats = async () => {
+      try {
+        const response = await fetch('/api/chats', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setChats(data.map((c: any) => ({ ...c, messages: [] })));
+        }
+      } catch (error) {
+        console.error("Fetch chats error:", error);
+      }
+    };
+
+    fetchChats();
+  }, [token]);
+
+  useEffect(() => {
+    if (!token || !currentChatId) return;
+
+    const fetchMessages = async () => {
+      try {
+        const response = await fetch(`/api/chats/${currentChatId}/messages`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setChats(prev => prev.map(c => 
+            c.id === currentChatId ? { ...c, messages: data } : c
+          ));
+        }
+      } catch (error) {
+        console.error("Fetch messages error:", error);
+      }
+    };
+
+    fetchMessages();
+  }, [token, currentChatId]);
+
+  useEffect(() => {
     scrollToBottom();
   }, [currentChat?.messages]);
 
@@ -53,40 +125,95 @@ export default function App() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const handleNewChat = () => {
-    const newChat: Chat = {
-      id: Date.now().toString(),
-      title: 'New Conversation',
-      messages: []
-    };
-    setChats(prev => [newChat, ...prev]);
-    setCurrentChatId(newChat.id);
+  const handleNewChat = async () => {
+    if (!token) return;
+
+    try {
+      const response = await fetch('/api/chats', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ title: 'New Conversation' })
+      });
+      if (response.ok) {
+        const newChat = await response.json();
+        setChats(prev => [ { ...newChat, messages: [] }, ...prev]);
+        setCurrentChatId(newChat.id);
+      }
+    } catch (error) {
+      console.error("Create chat error:", error);
+    }
   };
 
-  const handleSend = async (text: string, image?: string, action?: 'summarize' | 'edit') => {
-    if (!currentChatId) {
-      const newChat: Chat = {
-        id: Date.now().toString(),
-        title: action === 'summarize' ? 'Image Summary' : (text.slice(0, 30) || 'New Conversation'),
-        messages: []
-      };
-      setChats(prev => [newChat, ...prev]);
-      setCurrentChatId(newChat.id);
+  const handleSend = async (text: string, image?: string, action?: 'summarize' | 'edit', language?: string) => {
+    if (!token) return;
+    
+    let chatId = currentChatId;
+    
+    if (!chatId) {
+      try {
+        const response = await fetch('/api/chats', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ 
+            title: action === 'summarize' ? `Image Summary (${language || 'English'})` : (text.slice(0, 30) || 'New Conversation') 
+          })
+        });
+        if (response.ok) {
+          const newChat = await response.json();
+          chatId = newChat.id;
+          setChats(prev => [ { ...newChat, messages: [] }, ...prev]);
+          setCurrentChatId(chatId);
+        }
+      } catch (error) {
+        console.error("Create chat error:", error);
+        return;
+      }
     }
 
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: action === 'summarize' ? "Please summarize this image for me." : text,
-      image: image,
-      action: action
-    };
+    const userMessageContent = action === 'summarize' ? `Summarize this image in ${language || 'English'}.` : text;
 
-    setChats(prev => prev.map(c => 
-      c.id === (currentChatId || prev[0].id) 
-        ? { ...c, messages: [...c.messages, userMessage], title: c.messages.length === 0 ? (action === 'summarize' ? 'Image Summary' : text.slice(0, 30)) : c.title }
-        : c
-    ));
+    try {
+      await fetch(`/api/chats/${chatId}/messages`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          role: 'user',
+          content: userMessageContent,
+          image: image || null,
+          action: action || null
+        })
+      });
+
+      // Update chat title locally if it's the first message
+      if (currentChat?.messages.length === 0) {
+        const newTitle = action === 'summarize' ? `Image Summary (${language || 'English'})` : (text.slice(0, 30) || 'New Conversation');
+        await fetch(`/api/chats/${chatId}`, {
+          method: 'PATCH',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ title: newTitle })
+        });
+      }
+
+      // Update local state temporarily
+      setChats(prev => prev.map(c => 
+        c.id === chatId ? { ...c, messages: [...c.messages, { id: 'temp-' + Date.now(), role: 'user', content: userMessageContent, image, action }] } : c
+      ));
+
+    } catch (error) {
+      console.error("Send message error:", error);
+    }
 
     setIsLoading(true);
     setPendingAction(null);
@@ -103,7 +230,8 @@ export default function App() {
           
           CRITICAL INSTRUCTIONS:
           1. OCR & EXTRACTION: If the document contains scanned text, images, or handwriting, perform a detailed OCR extraction to ensure no key information is missed.
-          2. STRUCTURE: Present the information in a highly structured, logical flow.
+          2. LANGUAGE: You MUST provide the full summary translated into ${language || 'English'}.
+          3. STRUCTURE: Present the information in a highly structured, logical flow.
           
           Follow these strict formatting rules:
           1. TOPIC HEADER: Start with the topic name as a main header (e.g., # TOPIC NAME).
@@ -113,18 +241,6 @@ export default function App() {
           5. KEY POINTS: Use arrows (->) for key takeaways.
           6. SEPARATORS: Use dotted lines (....................) to separate major sections.
           7. STYLE: Write like a professional expert. Be concise but thorough.
-          
-          Example:
-          # ARTIFICIAL INTELLIGENCE
-          ....................
-          ## <u>Introduction</u>
-          * AI -> The simulation of human intelligence by machines.
-          * Machine Learning -> A subset of AI focused on data patterns.
-          
-          ## <u>Key Concepts</u>
-          1. Neural Networks -> Modeled after the human brain.
-          -> AI is transforming modern technology.
-          ....................
         `;
         responseText = await chatWithGemini(summaryPrompt, [], image) || `I couldn't summarize that ${isPdf ? 'PDF' : 'image'}.`;
       } else if (action === 'edit' && image) {
@@ -139,111 +255,64 @@ export default function App() {
           responseText = "I tried to edit the image using Nano Banana, but I couldn't generate a new version. Please try a different prompt!";
         }
       } else {
-        const prompt = text.toLowerCase();
-        const isImageRequest = prompt.includes('generate') || 
-                              prompt.includes('create') || 
-                              prompt.includes('draw') || 
-                              prompt.includes('visualize') ||
-                              prompt.includes('show me') ||
-                              prompt.includes('render') ||
-                              prompt.includes('make an image') ||
-                              prompt.includes('picture of') ||
-                              prompt.includes('add a') ||
-                              prompt.includes('change the') ||
-                              prompt.includes('edit');
-
-        if (isImageRequest) {
-          setIsGeneratingImage(true);
-          const enhancedPrompt = `High-quality, professional, aesthetic: ${text}. Modern, vibrant, detailed, cinematic lighting.`;
-          const generatedImageUrl = await generateImage(enhancedPrompt, image);
-          setIsGeneratingImage(false);
-          if (generatedImageUrl) {
-            responseImage = generatedImageUrl;
-            responseText = "Here is the professional, high-quality image I created for you using NanoBanana Pro! 🍌✨";
-          } else {
-            // If image generation failed, try normal chat as fallback
-            const history = currentChat?.messages.map(m => ({
-              role: m.role,
-              parts: [{ text: m.content }]
-            })) || [];
-            responseText = await chatWithGemini(text, history, image) || "Sorry, I couldn't process that.";
-          }
-        } else {
-          const history = currentChat?.messages.map(m => ({
-            role: m.role,
-            parts: [{ text: m.content }]
-          })) || [];
-          responseText = await chatWithGemini(text, history, image) || "Sorry, I couldn't process that.";
-        }
+        const history = currentChat?.messages.map(m => ({
+          role: m.role,
+          parts: [{ text: m.content }]
+        })) || [];
+        responseText = await chatWithGemini(text, history, image) || "Sorry, I couldn't process that.";
       }
 
-      // Handle raw JSON responses or tool calls from the model
-      if (responseText.trim().startsWith('{')) {
-        try {
-          // Try to extract prompt using regex if JSON is malformed (common with nested quotes)
-          const promptMatch = responseText.match(/"prompt":\s*"([^"]+)"/);
-          const innerPrompt = promptMatch ? promptMatch[1] : null;
-          
-          if (innerPrompt) {
-            const retryImageUrl = await generateImage(innerPrompt, image);
-            if (retryImageUrl) {
-              responseImage = retryImageUrl;
-              responseText = "I've generated the professional image you requested using NanoBanana Pro! 🍌✨";
-            }
-          } else {
-            // Try standard JSON parse if regex fails
-            const json = JSON.parse(responseText);
-            if (json.action === 'dalle.text2im' || json.action_input) {
-              const toolPrompt = typeof json.action_input === 'string' 
-                ? (json.action_input.includes('prompt') ? JSON.parse(json.action_input).prompt : json.action_input)
-                : json.action_input?.prompt;
-              
-              if (toolPrompt) {
-                const retryImageUrl = await generateImage(toolPrompt, image);
-                if (retryImageUrl) {
-                  responseImage = retryImageUrl;
-                  responseText = json.thought || "I've generated the image you requested! 🍌✨";
-                }
-              }
-            }
-          }
-        } catch (e) {
-          // Not valid JSON or not a tool call, keep original text
-        }
+      await fetch(`/api/chats/${chatId}/messages`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          role: 'model',
+          content: responseText,
+          image: responseImage || null,
+          action: action || null
+        })
+      });
+
+      // Refetch messages to get the real IDs
+      const msgRes = await fetch(`/api/chats/${chatId}/messages`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (msgRes.ok) {
+        const data = await msgRes.json();
+        setChats(prev => prev.map(c => 
+          c.id === chatId ? { ...c, messages: data } : c
+        ));
       }
 
-      const modelMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'model',
-        content: responseText,
-        image: responseImage,
-        action: action
-      };
-
-      setChats(prev => prev.map(c => 
-        c.id === (currentChatId || prev[0].id) 
-          ? { ...c, messages: [...c.messages, modelMessage] }
-          : c
-      ));
     } catch (error: any) {
       console.error(error);
       setIsGeneratingImage(false);
-      let content = "Oops! Orbit Collage Student AI encountered a technical glitch. This can happen with complex image edits. Please try a simpler prompt or try again in a moment! 🍌";
-      
-      if (error?.message?.includes('API_KEY_MISSING')) {
-        content = "⚠️ **API Key Missing**: It looks like the Gemini API Key is not set up on your Vercel deployment. Please add `GEMINI_API_KEY` to your Vercel Environment Variables and redeploy your app.";
-      }
-
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
+      const errorMessage = {
         role: 'model',
-        content: content
+        content: "Oops! Orbit College Student AI encountered a technical glitch. Please try again in a moment! 🍌"
       };
-      setChats(prev => prev.map(c => 
-        c.id === (currentChatId || prev[0].id) 
-          ? { ...c, messages: [...c.messages, errorMessage] }
-          : c
-      ));
+      
+      await fetch(`/api/chats/${chatId}/messages`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(errorMessage)
+      });
+
+      const msgRes = await fetch(`/api/chats/${chatId}/messages`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (msgRes.ok) {
+        const data = await msgRes.json();
+        setChats(prev => prev.map(c => 
+          c.id === chatId ? { ...c, messages: data } : c
+        ));
+      }
     } finally {
       setIsLoading(false);
     }
@@ -456,6 +525,13 @@ export default function App() {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('orbit_token');
+    localStorage.removeItem('orbit_user');
+    setToken(null);
+    setUser(null);
+  };
+
   const triggerConfetti = () => {
     const duration = 3 * 1000;
     const animationEnd = Date.now() + duration;
@@ -477,8 +553,37 @@ export default function App() {
     }, 250);
   };
 
+  const themeClasses: Record<string, string> = {
+    dark: "bg-black text-zinc-100",
+    light: "bg-zinc-50 text-zinc-900",
+    white: "bg-white text-zinc-900",
+    dim: "bg-zinc-900 text-zinc-100"
+  };
+
+  const navClasses: Record<string, string> = {
+    dark: "bg-black/80 border-zinc-800",
+    light: "bg-zinc-100/80 border-zinc-200",
+    white: "bg-white/80 border-zinc-200",
+    dim: "bg-zinc-800/80 border-zinc-700"
+  };
+
+  const sidebarClasses: Record<string, string> = {
+    dark: "bg-zinc-950 border-zinc-800",
+    light: "bg-white border-zinc-200",
+    white: "bg-white border-zinc-100",
+    dim: "bg-zinc-900 border-zinc-800"
+  };
+
+  if (!authChecked) {
+    return (
+      <div className="h-screen bg-black flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-yellow-400/20 border-t-yellow-400 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
-    <div className="flex h-screen bg-black text-zinc-100 font-sans selection:bg-yellow-400/30 overflow-hidden">
+    <div className={`flex h-screen ${themeClasses[theme]} font-sans selection:bg-yellow-400/30 overflow-hidden transition-colors duration-300`}>
       <AnimatePresence mode="wait">
         {showWelcome ? (
           <motion.div
@@ -500,18 +605,25 @@ export default function App() {
               className="w-full max-w-2xl aspect-video rounded-[2rem] overflow-hidden shadow-[0_0_50px_rgba(234,179,8,0.15)] relative mb-12"
             >
               <img 
-                src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1000&auto=format&fit=crop" 
-                alt="Orbit Student Welcome" 
+                src="https://images.unsplash.com/photo-1532012197267-da84d127e765?q=80&w=1000&auto=format&fit=crop" 
+                alt="Orbit Student AI Book" 
                 className="w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/30" />
               <div className="absolute inset-0 flex items-center justify-center">
                 <motion.div 
-                  animate={{ scale: [1, 1.1, 1] }}
-                  transition={{ duration: 4, repeat: Infinity }}
+                  animate={{ 
+                    rotateY: [0, 180, 360],
+                    scale: [1, 1.1, 1]
+                  }}
+                  transition={{ 
+                    duration: 6, 
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
                   className="w-20 h-20 bg-yellow-400 rounded-2xl flex items-center justify-center text-4xl shadow-2xl shadow-yellow-400/40"
                 >
-                  🍌
+                  📖
                 </motion.div>
               </div>
             </motion.div>
@@ -522,19 +634,54 @@ export default function App() {
               transition={{ delay: 0.4 }}
               className="space-y-6 max-w-3xl"
             >
-              <h1 className="text-5xl md:text-7xl font-black tracking-tighter bg-gradient-to-b from-white to-zinc-500 bg-clip-text text-transparent">
-                Orbit College Student AI, <br />
-                <span className="text-yellow-400">how can we assist you?</span>
-              </h1>
-              <p className="text-zinc-400 text-xl font-medium">
+              <motion.h1 
+                className="text-5xl md:text-7xl font-black tracking-tighter bg-gradient-to-b from-white to-zinc-500 bg-clip-text text-transparent"
+              >
+                {["Orbit", "College", "Student", "AI,"].map((word, i) => (
+                  <motion.span
+                    key={i}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 + (i * 0.1), duration: 0.5 }}
+                    className="inline-block mr-3"
+                  >
+                    {word}
+                  </motion.span>
+                ))}
+                <br />
+                {["how", "can", "we", "assist", "you?"].map((word, i) => (
+                  <motion.span
+                    key={i}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 1.0 + (i * 0.1), duration: 0.5 }}
+                    className="inline-block mr-3 text-yellow-400"
+                  >
+                    {word}
+                  </motion.span>
+                ))}
+              </motion.h1>
+              <motion.p 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 1.8 }}
+                className="text-zinc-400 text-xl font-medium"
+              >
                 Powered by <span className="text-yellow-400 italic">self-made gold</span> 🍌
-              </p>
+              </motion.p>
               
               <button
-                onClick={() => setShowWelcome(false)}
-                className="mt-8 px-10 py-4 bg-yellow-400 text-black font-black rounded-2xl shadow-[0_0_30px_rgba(234,179,8,0.3)] hover:shadow-[0_0_50px_rgba(234,179,8,0.5)] hover:scale-105 active:scale-95 transition-all flex items-center gap-2 mx-auto"
+                onClick={() => {
+                  if (user) {
+                    setShowWelcome(false);
+                  } else {
+                    setShowWelcome(false);
+                    setShowAuth(true);
+                  }
+                }}
+                className="mt-8 px-10 py-4 bg-accent text-black font-black rounded-2xl shadow-[0_0_30px_rgba(234,179,8,0.3)] hover:shadow-[0_0_50px_rgba(234,179,8,0.5)] hover:scale-105 active:scale-95 transition-all flex items-center gap-2 mx-auto btn-animated"
               >
-                Enter Orbit <Sparkles size={20} />
+                {user ? 'Open Dashboard' : 'Enter Orbit'} <Sparkles size={20} />
               </button>
             </motion.div>
 
@@ -547,6 +694,22 @@ export default function App() {
               Version 3.1 Pro • Ultra Fast Mode
             </motion.div>
           </motion.div>
+        ) : showAuth && !user ? (
+          <Auth 
+            key="auth"
+            onSuccess={(token, user) => {
+              setToken(token);
+              setUser(user);
+              setShowAuth(false);
+              setShowWelcome(false);
+            }} 
+            onBack={() => setShowAuth(false)} 
+          />
+        ) : !user ? (
+          <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-6 text-center">
+             <h2 className="text-2xl font-bold mb-4">Please log in to continue</h2>
+             <button onClick={() => setShowAuth(true)} className="px-6 py-2 bg-yellow-400 text-black font-bold rounded-lg">Sign In</button>
+          </div>
         ) : (
           <motion.div 
             key="app"
@@ -557,15 +720,25 @@ export default function App() {
             <Sidebar
               isOpen={isSidebarOpen}
               onClose={() => setIsSidebarOpen(false)}
-              onNewChat={handleNewChat}
+              onNewChat={() => {
+                handleNewChat();
+                setCurrentView('home');
+              }}
               chatHistory={chats.map(c => ({ id: c.id, title: c.title }))}
               currentChatId={currentChatId}
-              onSelectChat={setCurrentChatId}
+              onSelectChat={(id) => {
+                setCurrentChatId(id);
+                setCurrentView('home');
+              }}
+              currentView={currentView}
+              onViewChange={setCurrentView}
+              theme={theme}
+              accentStyle={accentStyle}
             />
 
             <main className="flex-1 flex flex-col relative overflow-hidden">
               {/* Top Navigation */}
-              <header className="h-16 border-b border-zinc-800 flex items-center justify-between px-4 bg-black/80 backdrop-blur-md z-30">
+              <header className={`h-16 border-b ${navClasses[theme]} flex items-center justify-between px-4 backdrop-blur-md z-30 transition-colors`}>
                 <div className="flex items-center gap-4">
                   <button 
                     onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -574,35 +747,117 @@ export default function App() {
                     {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
                   </button>
                   
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-yellow-400 rounded-lg flex items-center justify-center text-black text-sm shadow-lg shadow-yellow-400/20">
-                      🍌
+                  <button 
+                    onClick={() => setCurrentView('home')}
+                    className="flex items-center gap-3 active:scale-95 transition-transform"
+                  >
+                    <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center text-black text-sm shadow-lg shadow-accent/20 overflow-hidden">
+                      {user?.avatarUrl ? (
+                        <img src={user.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        "🍌"
+                      )}
                     </div>
+                  </button>
                     <div className="flex flex-col">
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-lg tracking-tight leading-none text-white">
-                          {currentChat?.title || "Orbit Collage Student AI"}
+                          {currentChat?.title || "Orbit College Student AI"}
                         </span>
                         <div className="bg-yellow-400 text-black text-[9px] font-black px-1.5 py-0.5 rounded shadow-sm uppercase tracking-tighter">
                           Pro
                         </div>
                       </div>
                       <div className="flex items-center gap-1.5 mt-1">
-                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
-                        <span className="text-[8px] text-zinc-500 font-black uppercase tracking-[0.2em]">Ultra Fast Mode Active</span>
+                        <span className="text-[10px] text-zinc-400 font-bold truncate max-w-[150px]">
+                          {user?.displayName || user?.email}
+                        </span>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="flex items-center gap-2">
-                  {/* Right side actions if any */}
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setCurrentView('settings')}
+                    className="p-2 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-yellow-400 transition-colors"
+                    title="Settings"
+                  >
+                    <Settings size={18} />
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="p-2 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-red-400 transition-colors"
+                    title="Logout"
+                  >
+                    <LogOut size={18} />
+                  </button>
                 </div>
               </header>
 
-              {/* Chat Area */}
-              <div className="flex-1 overflow-y-auto scrollbar-hide">
-                {(!currentChat || currentChat.messages.length === 0) ? (
+              {/* Content Area */}
+              <div className={cn(
+                "flex-1 overflow-y-auto scrollbar-hide",
+                fontStyle === 'editorial' && "font-serif tracking-tight",
+                fontStyle === 'tech' && "font-mono"
+              )}>
+                <style dangerouslySetInnerHTML={{ __html: `
+                  :root {
+                    --accent-color: ${accentColor};
+                  }
+                  .bg-accent { background-color: var(--accent-color) !important; }
+                  .text-accent { color: var(--accent-color) !important; }
+                  .border-accent { border-color: var(--accent-color) !important; }
+                  
+                  @keyframes accentFlow {
+                    0% { filter: hue-rotate(0deg) brightness(1); }
+                    50% { filter: hue-rotate(30deg) brightness(1.2); }
+                    100% { filter: hue-rotate(0deg) brightness(1); }
+                  }
+                  .accent-flow {
+                    animation: accentFlow 4s infinite ease-in-out;
+                  }
+                  .btn-animated {
+                    position: relative;
+                    overflow: hidden;
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                  }
+                  .btn-animated::after {
+                    content: '';
+                    position: absolute;
+                    inset: 0;
+                    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+                    transform: translateX(-100%);
+                    transition: transform 0.5s;
+                  }
+                  .btn-animated:hover::after {
+                    transform: translateX(100%);
+                  }
+                `}} />
+                {currentView === 'profile' ? (
+                  <ProfileView 
+                    user={user} 
+                    onBack={() => setCurrentView('home')} 
+                    theme={theme} 
+                    onUpdateUser={setUser}
+                  />
+                ) : currentView === 'settings' ? (
+                  <SettingsView 
+                    theme={theme} 
+                    onThemeChange={setTheme} 
+                    accentColor={accentColor}
+                    onAccentColorChange={setAccentColor}
+                    accentStyle={accentStyle}
+                    onAccentStyleChange={setAccentStyle}
+                    fontStyle={fontStyle}
+                    onFontStyleChange={setFontStyle}
+                    onBack={() => setCurrentView('home')} 
+                  />
+                ) : currentView === 'history' ? (
+                  <HistoryView chats={chats} onSelectChat={(id) => {
+                    setCurrentChatId(id);
+                    setCurrentView('home');
+                  }} onBack={() => setCurrentView('home')} theme={theme} />
+                ) : (!currentChat || currentChat.messages.length === 0) ? (
                   <div className="h-full flex flex-col items-center justify-center p-8 text-center space-y-8 max-w-4xl mx-auto">
                     <motion.div
                       initial={{ scale: 0.9, opacity: 0 }}
@@ -625,7 +880,9 @@ export default function App() {
                     <div className="space-y-4">
                       <h1 className="text-4xl md:text-5xl font-bold tracking-tight bg-gradient-to-b from-white to-zinc-500 bg-clip-text text-transparent">
                         Orbit College Student AI, <br />
-                        <span className="text-yellow-400">how can we assist you?</span>
+                        <span className="text-accent underline decoration-accent/30 decoration-2 underline-offset-4">
+                          {user?.name ? `welcome back ${user.name}, ` : ''}how can we assist you?
+                        </span>
                       </h1>
                       <p className="text-zinc-500 text-lg font-medium">
                         Powered by <span className="text-yellow-500 italic">self-made gold</span> 🍌
@@ -725,16 +982,19 @@ export default function App() {
               </div>
 
               {/* Input Area */}
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black via-black/90 to-transparent pt-10 pb-4">
-                <ChatInput 
-                  onSend={handleSend} 
-                  onManualEdit={(url) => setEditingImage({ url, messageId: 'preview' })}
-                  image={pendingImage}
-                  onImageChange={setPendingImage}
-                  initialAction={pendingAction}
-                  disabled={isLoading} 
-                />
-              </div>
+              {currentView === 'home' && (
+                <div className={`absolute bottom-0 left-0 right-0 ${navClasses[theme]} bg-gradient-to-t via-current to-transparent pt-10 pb-4`}>
+                  <ChatInput 
+                    onSend={handleSend} 
+                    onManualEdit={(url) => setEditingImage({ url, messageId: 'preview' })}
+                    image={pendingImage}
+                    onImageChange={setPendingImage}
+                    initialAction={pendingAction}
+                    disabled={isLoading} 
+                    accentStyle={accentStyle}
+                  />
+                </div>
+              )}
             </main>
           </motion.div>
         )}

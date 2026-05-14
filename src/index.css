@@ -12,13 +12,29 @@
 
 /* Basic prose-like styles for markdown if tailwind-typography is not installed */
 .prose {
-  @apply text-zinc-300 leading-relaxed;
+  @apply leading-relaxed;
 }
+
+.dark .prose, .dim .prose {
+  @apply text-zinc-300;
+}
+
+.light .prose, .white .prose {
+  @apply text-zinc-700;
+}
+
 .prose p {
   @apply mb-4 last:mb-0;
 }
-.prose h1, .prose h2, .prose h3 {
+
+.dark .prose h1, .dark .prose h2, .dark .prose h3,
+.dim .prose h1, .dim .prose h2, .dim .prose h3 {
   @apply font-bold text-zinc-100 mt-6 mb-4;
+}
+
+.light .prose h1, .light .prose h2, .light .prose h3,
+.white .prose h1, .white .prose h2, .white .prose h3 {
+  @apply font-bold text-zinc-900 mt-6 mb-4;
 }
 .prose ul, .prose ol {
   @apply ml-6 mb-4;

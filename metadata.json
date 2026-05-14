@@ -1,6 +1,6 @@
 {
-  "name": "Orbit Collage Student AI",
-  "description": "A creative AI assistant featuring high-quality image generation and professional editing powered by NanoBanana Pro.",
-  "requestFramePermissions": ["microphone"],
+  "name": "Orbit College Student AI",
+  "description": "A professional AI assistant for students featuring academic tools, high-quality image generation, and secure student identity management.",
+  "requestFramePermissions": ["microphone", "camera"],
   "majorCapabilities": []
 }
