@@ -32,10 +32,12 @@ interface Chat {
 }
 
 export default function App() {
+  const [showWelcome, setShowWelcome] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [chats, setChats] = useState<Chat[]>([]);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [editingImage, setEditingImage] = useState<{ url: string; messageId: string } | null>(null);
   const [pendingImage, setPendingImage] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<'summarize' | 'edit' | null>(null);
@@ -126,8 +128,10 @@ export default function App() {
         `;
         responseText = await chatWithGemini(summaryPrompt, [], image) || `I couldn't summarize that ${isPdf ? 'PDF' : 'image'}.`;
       } else if (action === 'edit' && image) {
+        setIsGeneratingImage(true);
         const editPrompt = `Expert editor: ${text}. Style: Professional, high-quality, realistic, aesthetic. Maintain composition.`;
         const generatedImageUrl = await generateImage(editPrompt, image);
+        setIsGeneratingImage(false);
         if (generatedImageUrl) {
           responseImage = generatedImageUrl;
           responseText = "I've professionally edited the image using Nano Banana! How does it look? 🍌✨";
@@ -149,8 +153,10 @@ export default function App() {
                               prompt.includes('edit');
 
         if (isImageRequest) {
+          setIsGeneratingImage(true);
           const enhancedPrompt = `High-quality, professional, aesthetic: ${text}. Modern, vibrant, detailed, cinematic lighting.`;
           const generatedImageUrl = await generateImage(enhancedPrompt, image);
+          setIsGeneratingImage(false);
           if (generatedImageUrl) {
             responseImage = generatedImageUrl;
             responseText = "Here is the professional, high-quality image I created for you using NanoBanana Pro! 🍌✨";
@@ -221,6 +227,7 @@ export default function App() {
       ));
     } catch (error: any) {
       console.error(error);
+      setIsGeneratingImage(false);
       let content = "Oops! Orbit Collage Student AI encountered a technical glitch. This can happen with complex image edits. Please try a simpler prompt or try again in a moment! 🍌";
       
       if (error?.message?.includes('API_KEY_MISSING')) {
@@ -471,171 +478,267 @@ export default function App() {
   };
 
   return (
-    <div className="flex h-screen bg-black text-zinc-100 font-sans selection:bg-yellow-400/30">
-      <AnimatePresence>
-        {editingImage && (
-          <ImageEditor
-            image={editingImage.url}
-            onSave={handleSaveEditedImage}
-            onCancel={() => setEditingImage(null)}
-          />
-        )}
-      </AnimatePresence>
+    <div className="flex h-screen bg-black text-zinc-100 font-sans selection:bg-yellow-400/30 overflow-hidden">
+      <AnimatePresence mode="wait">
+        {showWelcome ? (
+          <motion.div
+            key="welcome"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center p-6 text-center"
+          >
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+              <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-yellow-400/10 rounded-full blur-[120px] animate-pulse" />
+              <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-yellow-400/5 rounded-full blur-[120px] animate-pulse delay-700" />
+            </div>
 
-      <Sidebar
-        isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
-        onNewChat={handleNewChat}
-        chatHistory={chats.map(c => ({ id: c.id, title: c.title }))}
-        currentChatId={currentChatId}
-        onSelectChat={setCurrentChatId}
-      />
-
-      <main className="flex-1 flex flex-col relative overflow-hidden">
-        {/* Top Navigation */}
-        <header className="h-16 border-b border-zinc-800 flex items-center justify-between px-4 bg-black/80 backdrop-blur-md z-30">
-          <div className="flex items-center gap-4">
-            <button 
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="p-2 hover:bg-zinc-800 rounded-lg transition-colors text-zinc-400 hover:text-yellow-400"
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.2, type: 'spring' }}
+              className="w-full max-w-2xl aspect-video rounded-[2rem] overflow-hidden shadow-[0_0_50px_rgba(234,179,8,0.15)] relative mb-12"
             >
-              {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
-            </button>
-            
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-yellow-400 rounded-lg flex items-center justify-center text-black text-sm shadow-lg shadow-yellow-400/20">
-                🍌
+              <img 
+                src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1000&auto=format&fit=crop" 
+                alt="Orbit Student Welcome" 
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/30" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <motion.div 
+                  animate={{ scale: [1, 1.1, 1] }}
+                  transition={{ duration: 4, repeat: Infinity }}
+                  className="w-20 h-20 bg-yellow-400 rounded-2xl flex items-center justify-center text-4xl shadow-2xl shadow-yellow-400/40"
+                >
+                  🍌
+                </motion.div>
               </div>
-              <div className="flex flex-col">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-lg tracking-tight leading-none text-white">
-                    {currentChat?.title || "Orbit Collage Student AI"}
-                  </span>
-                  <div className="bg-yellow-400 text-black text-[9px] font-black px-1.5 py-0.5 rounded shadow-sm uppercase tracking-tighter">
-                    Pro
-                  </div>
-                </div>
-                <div className="flex items-center gap-1.5 mt-1">
-                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
-                  <span className="text-[8px] text-zinc-500 font-black uppercase tracking-[0.2em]">Ultra Fast Mode Active</span>
-                </div>
-              </div>
-            </div>
-          </div>
+            </motion.div>
 
-          <div className="flex items-center gap-2">
-            {/* Right side actions if any */}
-          </div>
-        </header>
-
-        {/* Chat Area */}
-        <div className="flex-1 overflow-y-auto scrollbar-hide">
-          {(!currentChat || currentChat.messages.length === 0) ? (
-            <div className="h-full flex flex-col items-center justify-center p-8 text-center space-y-8">
-              <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ type: 'spring', duration: 0.8 }}
-                className="w-24 h-24 bg-yellow-400 rounded-3xl flex items-center justify-center text-5xl shadow-2xl shadow-yellow-400/20"
-              >
-                🍌
-              </motion.div>
-              <div className="space-y-2">
-                <h2 className="text-3xl font-bold tracking-tight">How can I help you today?</h2>
-                <p className="text-zinc-500 max-w-md mx-auto">
-                  I'm Orbit Collage Student AI, your creative AI assistant. I can chat, generate images, and help you edit them.
-                </p>
-              </div>
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.4 }}
+              className="space-y-6 max-w-3xl"
+            >
+              <h1 className="text-5xl md:text-7xl font-black tracking-tighter bg-gradient-to-b from-white to-zinc-500 bg-clip-text text-transparent">
+                Orbit College Student AI, <br />
+                <span className="text-yellow-400">how can we assist you?</span>
+              </h1>
+              <p className="text-zinc-400 text-xl font-medium">
+                Powered by <span className="text-yellow-400 italic">self-made gold</span> 🍌
+              </p>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl w-full">
-                {[
-                  { icon: Sparkles, title: "Orbit Tech Scene", desc: "A realistic iPhone on a desk showing a banana, surrounded by a glowing blue holographic PC network grid", color: "text-yellow-400" },
-                  { icon: MessageSquare, title: "Brainstorm ideas", desc: "Give me 5 names for a new coffee shop", color: "text-blue-400" },
-                  { icon: ImageIcon, title: "Edit a photo", desc: "Upload an image and ask me to change it", color: "text-green-400" },
-                  { icon: Search, title: "Explain concepts", desc: "How does quantum computing work?", color: "text-purple-400" }
-                ].map((item, i) => (
-                  <button
-                    key={i}
-                    onClick={() => handleSend(item.desc)}
-                    className="p-4 bg-zinc-900/50 border border-zinc-800 rounded-2xl text-left hover:bg-zinc-800 hover:border-zinc-700 transition-all group"
+              <button
+                onClick={() => setShowWelcome(false)}
+                className="mt-8 px-10 py-4 bg-yellow-400 text-black font-black rounded-2xl shadow-[0_0_30px_rgba(234,179,8,0.3)] hover:shadow-[0_0_50px_rgba(234,179,8,0.5)] hover:scale-105 active:scale-95 transition-all flex items-center gap-2 mx-auto"
+              >
+                Enter Orbit <Sparkles size={20} />
+              </button>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.8 }}
+              className="absolute bottom-8 left-0 right-0 text-[10px] uppercase tracking-[0.4em] text-zinc-600 font-black"
+            >
+              Version 3.1 Pro • Ultra Fast Mode
+            </motion.div>
+          </motion.div>
+        ) : (
+          <motion.div 
+            key="app"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex w-full h-full"
+          >
+            <Sidebar
+              isOpen={isSidebarOpen}
+              onClose={() => setIsSidebarOpen(false)}
+              onNewChat={handleNewChat}
+              chatHistory={chats.map(c => ({ id: c.id, title: c.title }))}
+              currentChatId={currentChatId}
+              onSelectChat={setCurrentChatId}
+            />
+
+            <main className="flex-1 flex flex-col relative overflow-hidden">
+              {/* Top Navigation */}
+              <header className="h-16 border-b border-zinc-800 flex items-center justify-between px-4 bg-black/80 backdrop-blur-md z-30">
+                <div className="flex items-center gap-4">
+                  <button 
+                    onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                    className="p-2 hover:bg-zinc-800 rounded-lg transition-colors text-zinc-400 hover:text-yellow-400"
                   >
-                    <div className="flex items-center gap-3 mb-1">
-                      <motion.div
-                        animate={{
-                          y: [0, -5, 0, 5, 0],
-                          x: [0, 5, 0, -5, 0],
-                          color: ["#eab308", "#3b82f6", "#22c55e", "#a855f7", "#eab308"]
-                        }}
-                        transition={{
-                          duration: 4,
-                          repeat: Infinity,
-                          ease: "easeInOut",
-                          delay: i * 0.5
-                        }}
-                        className={item.color}
-                      >
-                        <item.icon size={20} />
-                      </motion.div>
-                      <span className="font-semibold text-sm">{item.title}</span>
-                    </div>
-                    <p className="text-xs text-zinc-500 group-hover:text-zinc-400">{item.desc}</p>
+                    {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
                   </button>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="pb-32">
-              {currentChat.messages.map((msg) => (
-                <ChatMessage 
-                  key={msg.id} 
-                  role={msg.role} 
-                  content={msg.content} 
-                  image={msg.image} 
-                  action={msg.action}
-                  onEditImage={(url) => setEditingImage({ url, messageId: msg.id })}
-                  onAIEditImage={(url) => {
-                    setPendingImage(url);
-                    setPendingAction('edit');
-                  }}
-                  onDownloadPDF={handleDownloadPDF}
-                  onDownloadPPT={handleDownloadPPT}
-                  onDownloadExcel={handleDownloadExcel}
-                  onDownloadImage={handleDownloadImage}
-                  onShareWhatsApp={handleShareWhatsApp}
-                  onShareMore={handleShareMore}
-                />
-              ))}
-              {isLoading && (
-                <div className="p-6 bg-zinc-900/50 border-y border-zinc-800/50">
-                  <div className="max-w-4xl mx-auto w-full flex gap-6">
-                    <div className="w-8 h-8 rounded-lg bg-yellow-400 text-black flex items-center justify-center animate-pulse">
+                  
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-yellow-400 rounded-lg flex items-center justify-center text-black text-sm shadow-lg shadow-yellow-400/20">
                       🍌
                     </div>
-                    <div className="flex gap-1 items-center">
-                      <div className="w-1.5 h-1.5 bg-zinc-500 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                      <div className="w-1.5 h-1.5 bg-zinc-500 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                      <div className="w-1.5 h-1.5 bg-zinc-500 rounded-full animate-bounce" />
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-lg tracking-tight leading-none text-white">
+                          {currentChat?.title || "Orbit Collage Student AI"}
+                        </span>
+                        <div className="bg-yellow-400 text-black text-[9px] font-black px-1.5 py-0.5 rounded shadow-sm uppercase tracking-tighter">
+                          Pro
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
+                        <span className="text-[8px] text-zinc-500 font-black uppercase tracking-[0.2em]">Ultra Fast Mode Active</span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-          )}
-        </div>
 
-        {/* Input Area */}
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black via-black/90 to-transparent pt-10 pb-4">
-          <ChatInput 
-            onSend={handleSend} 
-            onManualEdit={(url) => setEditingImage({ url, messageId: 'preview' })}
-            image={pendingImage}
-            onImageChange={setPendingImage}
-            initialAction={pendingAction}
-            disabled={isLoading} 
-          />
-        </div>
-      </main>
+                <div className="flex items-center gap-2">
+                  {/* Right side actions if any */}
+                </div>
+              </header>
+
+              {/* Chat Area */}
+              <div className="flex-1 overflow-y-auto scrollbar-hide">
+                {(!currentChat || currentChat.messages.length === 0) ? (
+                  <div className="h-full flex flex-col items-center justify-center p-8 text-center space-y-8 max-w-4xl mx-auto">
+                    <motion.div
+                      initial={{ scale: 0.9, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ duration: 0.8 }}
+                      className="w-full max-w-lg aspect-video rounded-3xl overflow-hidden shadow-2xl relative group"
+                    >
+                      <img 
+                        src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1000&auto=format&fit=crop" 
+                        alt="Welcome" 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end justify-center pb-6">
+                        <div className="bg-yellow-400/90 text-black px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider animate-pulse">
+                          NanoBanana Pro Active
+                        </div>
+                      </div>
+                    </motion.div>
+
+                    <div className="space-y-4">
+                      <h1 className="text-4xl md:text-5xl font-bold tracking-tight bg-gradient-to-b from-white to-zinc-500 bg-clip-text text-transparent">
+                        Orbit College Student AI, <br />
+                        <span className="text-yellow-400">how can we assist you?</span>
+                      </h1>
+                      <p className="text-zinc-500 text-lg font-medium">
+                        Powered by <span className="text-yellow-500 italic">self-made gold</span> 🍌
+                      </p>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl w-full pt-4">
+                      {[
+                        { icon: Sparkles, title: "Orbit Tech Scene", desc: "A realistic iPhone on a desk showing a banana, surrounded by a glowing blue holographic PC network grid", color: "text-yellow-400" },
+                        { icon: MessageSquare, title: "Brainstorm ideas", desc: "Give me 5 names for a new coffee shop", color: "text-blue-400" },
+                        { icon: ImageIcon, title: "Edit a photo", desc: "Upload an image and ask me to change it", color: "text-green-400" },
+                        { icon: Search, title: "Explain concepts", desc: "How does quantum computing work?", color: "text-purple-400" }
+                      ].map((item, i) => (
+                        <button
+                          key={i}
+                          onClick={() => handleSend(item.desc)}
+                          className="p-4 bg-zinc-900/50 border border-zinc-800 rounded-2xl text-left hover:bg-zinc-800 hover:border-zinc-700 transition-all group"
+                        >
+                          <div className="flex items-center gap-3 mb-1">
+                            <motion.div
+                              animate={{
+                                y: [0, -5, 0, 5, 0],
+                                x: [0, 5, 0, -5, 0],
+                                color: ["#eab308", "#3b82f6", "#22c55e", "#a855f7", "#eab308"]
+                              }}
+                              transition={{
+                                duration: 4,
+                                repeat: Infinity,
+                                ease: "easeInOut",
+                                delay: i * 0.5
+                              }}
+                              className={item.color}
+                            >
+                              <item.icon size={20} />
+                            </motion.div>
+                            <span className="font-semibold text-sm">{item.title}</span>
+                          </div>
+                          <p className="text-xs text-zinc-500 group-hover:text-zinc-400">{item.desc}</p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="pb-32">
+                    {currentChat.messages.map((msg) => (
+                      <ChatMessage 
+                        key={msg.id} 
+                        role={msg.role} 
+                        content={msg.content} 
+                        image={msg.image} 
+                        action={msg.action}
+                        onEditImage={(url) => setEditingImage({ url, messageId: msg.id })}
+                        onAIEditImage={(url) => {
+                          setPendingImage(url);
+                          setPendingAction('edit');
+                        }}
+                        onDownloadPDF={handleDownloadPDF}
+                        onDownloadPPT={handleDownloadPPT}
+                        onDownloadExcel={handleDownloadExcel}
+                        onDownloadImage={handleDownloadImage}
+                        onShareWhatsApp={handleShareWhatsApp}
+                        onShareMore={handleShareMore}
+                      />
+                    ))}
+                    {isLoading && (
+                      <div className="p-6 bg-zinc-900/50 border-y border-zinc-800/50">
+                        <div className="max-w-4xl mx-auto w-full flex gap-6">
+                          <div className="w-8 h-8 rounded-lg bg-yellow-400 text-black flex items-center justify-center animate-pulse shrink-0">
+                            🍌
+                          </div>
+                          <div className="flex-1 space-y-4">
+                            {isGeneratingImage ? (
+                              <div className="space-y-4">
+                                <div className="flex items-center gap-2 text-yellow-400 text-xs font-bold uppercase tracking-widest animate-pulse">
+                                  <Sparkles size={14} />
+                                  NanoBanana Pro is generating your masterpiece...
+                                </div>
+                                <div className="max-w-md w-full aspect-square bg-zinc-800 rounded-2xl animate-pulse flex items-center justify-center border border-zinc-700">
+                                  <ImageIcon size={48} className="text-zinc-700 animate-bounce" />
+                                </div>
+                                <div className="h-4 bg-zinc-800 rounded w-3/4 animate-pulse" />
+                              </div>
+                            ) : (
+                              <div className="flex gap-1 items-center h-8">
+                                <div className="w-1.5 h-1.5 bg-zinc-500 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                                <div className="w-1.5 h-1.5 bg-zinc-500 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                                <div className="w-1.5 h-1.5 bg-zinc-500 rounded-full animate-bounce" />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    <div ref={messagesEndRef} />
+                  </div>
+                )}
+              </div>
+
+              {/* Input Area */}
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black via-black/90 to-transparent pt-10 pb-4">
+                <ChatInput 
+                  onSend={handleSend} 
+                  onManualEdit={(url) => setEditingImage({ url, messageId: 'preview' })}
+                  image={pendingImage}
+                  onImageChange={setPendingImage}
+                  initialAction={pendingAction}
+                  disabled={isLoading} 
+                />
+              </div>
+            </main>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

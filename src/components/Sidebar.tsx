@@ -110,7 +110,7 @@ export default function Sidebar({ isOpen, onClose, onNewChat, chatHistory, curre
             }}
             transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
           >
-            Powered by kgomotso diphoko the 🍌
+            Powered by NanoBanana Pro 🍌
           </motion.span>
         </div>
       </motion.aside>

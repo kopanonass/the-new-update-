@@ -3,7 +3,8 @@ import { GoogleGenAI, ThinkingLevel } from "@google/genai";
 const getApiKey = () => {
   const key = process.env.GEMINI_API_KEY;
   if (!key || key === 'MY_GEMINI_API_KEY' || key.includes('TODO')) {
-    return null;
+    // Fallback to the key provided by the user if environment variable is missing
+    return "AIzaSyBTFdxLVUShKHQhN1Erd2LZzC4UL4kwfj0";
   }
   return key;
 };
@@ -49,7 +50,19 @@ export async function generateImage(prompt: string, base64Image?: string) {
     throw new Error("API_KEY_MISSING");
   }
   try {
-    const parts: any[] = [{ text: prompt }];
+    const rules = `
+You are an advanced AI image generation system. Your task is to create high-quality, professional-grade images based on user input.
+Follow these strict rules:
+- Quality & Style: Always produce sharp, high-resolution images. Use professional lighting, realistic shadows, and clean composition.
+- Design Standards: Maintain a balanced layout with proper spacing and alignment. Use consistent color harmony. Apply depth, contrast, and detail.
+- Clarity & Accuracy: Match the user's description exactly. Avoid distortions or glitches.
+- Branding & Theme: Follow a clean and professional theme. Maintain consistency.
+- Creativity & Enhancement: Improve the user’s idea subtly. Add realistic textures and fine details.
+- Output Rules: No watermarks or unnecessary text. Polished and production-ready.
+`;
+
+    const fullPrompt = `${rules}\n\nUser Request: ${prompt}`;
+    const parts: any[] = [{ text: fullPrompt }];
     
     if (base64Image) {
       parts.unshift({
@@ -61,7 +74,7 @@ export async function generateImage(prompt: string, base64Image?: string) {
     }
 
     const response = await ai.models.generateContent({
-      model: "gemini-3-pro-image-preview",
+      model: "gemini-3.1-flash-image-preview",
       contents: [{ role: 'user', parts: parts }],
       config: {
         imageConfig: {
