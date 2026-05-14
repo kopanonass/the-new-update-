@@ -42,6 +42,13 @@ export default function Auth({ onSuccess, onBack }: AuthProps) {
           body: JSON.stringify(body),
         });
 
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          const text = await response.text();
+          console.error('Non-JSON response:', text);
+          throw new Error(`Server returned non-JSON response: ${text.slice(0, 100)}`);
+        }
+
         const data = await response.json();
         
         if (!response.ok) throw new Error(data.error || 'Authentication failed');
@@ -55,6 +62,13 @@ export default function Auth({ onSuccess, onBack }: AuthProps) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email }),
         });
+        
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          const text = await response.text();
+          throw new Error(`Server error: ${text.slice(0, 100)}`);
+        }
+        
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Failed to send OTP');
         
@@ -66,6 +80,13 @@ export default function Auth({ onSuccess, onBack }: AuthProps) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, otp, newPassword }),
         });
+        
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          const text = await response.text();
+          throw new Error(`Server error: ${text.slice(0, 100)}`);
+        }
+        
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Failed to reset password');
         

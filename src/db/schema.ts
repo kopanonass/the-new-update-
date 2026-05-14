@@ -1,8 +1,7 @@
 import { pgTable, text, timestamp, serial } from 'drizzle-orm/pg-core';
 
 export const users = pgTable('users', {
-  id: serial('id').primaryKey(),
-  uid: text('uid').unique().notNull(), // local ID
+  uid: text('uid').primaryKey(), // local ID
   name: text('name').notNull(),
   surname: text('surname').notNull(),
   idNumber: text('id_number').notNull(),
@@ -16,7 +15,7 @@ export const users = pgTable('users', {
 
 export const chats = pgTable('chats', {
   id: text('id').primaryKey(), // We can use UUID or custom IDs
-  userId: text('user_id').references(() => users.uid).notNull(),
+  userId: text('user_id').references(() => users.uid, { onDelete: 'cascade' }).notNull(),
   title: text('title').notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });

@@ -35,7 +35,17 @@ async function startServer() {
 
   app.use(express.json());
 
+  // Request logger for debugging
+  app.use((req, res, next) => {
+    console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+    next();
+  });
+
   // API Routes
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok", timestamp: new Date() });
+  });
+
   app.post("/api/register", async (req, res) => {
     const { name, surname, idNumber, studentNumber, email, password } = req.body;
 
@@ -279,4 +289,6 @@ async function startServer() {
   });
 }
 
-startServer();
+startServer().catch(err => {
+  console.error("CRITICAL: Failed to start server:", err);
+});
