@@ -20,6 +20,11 @@ const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) 
 
   if (!token) return res.sendStatus(401);
 
+  if (token === 'guest_token') {
+    req.user = { uid: "guest_user", email: "student@orbit.edu", name: "Student", avatarUrl: null };
+    return next();
+  }
+
   jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
     if (err) return res.sendStatus(403);
     req.user = user;
@@ -30,6 +35,31 @@ const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) 
 async function startServer() {
   const app = express();
   const PORT = 3000;
+
+  // Ensure guest user exists
+  const ensureGuestUser = async () => {
+    try {
+      const db = getDb();
+      const guest = await db.select().from(users).where(eq(users.uid, "guest_user")).limit(1);
+      if (guest.length === 0) {
+        await db.insert(users).values({
+          uid: "guest_user",
+          name: "Student",
+          surname: "User",
+          idNumber: "0000000000000",
+          studentNumber: "GUEST001",
+          email: "student@orbit.edu",
+          password: "no_password_required",
+          emailVerified: 'true',
+          createdAt: new Date(),
+        });
+        console.log("Guest user created");
+      }
+    } catch (err) {
+      console.error("Error ensuring guest user:", err);
+    }
+  };
+  ensureGuestUser();
 
   const otps = new Map<string, { otp: string, expires: number }>();
 

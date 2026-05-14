@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, X, Search, Settings, Share2, MoreVertical, Sparkles, MessageSquare, Image as ImageIcon, ArrowLeft } from 'lucide-react';
+import { Menu, X, Search, Settings, Share2, MoreVertical, Sparkles, MessageSquare, Image as ImageIcon, ArrowLeft, LogOut, User as UserIcon, History as HistoryIcon, LayoutGrid } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import ChatInput from './components/ChatInput';
 import ChatMessage from './components/ChatMessage';
@@ -16,8 +16,6 @@ import { jsPDF } from 'jspdf';
 import PptxGenJS from 'pptxgenjs';
 import * as XLSX from 'xlsx';
 import confetti from 'canvas-confetti';
-import Auth from './components/Auth';
-import { LogOut, User as UserIcon, History as HistoryIcon, LayoutGrid } from 'lucide-react';
 import { ProfileView, SettingsView, HistoryView } from './components/NavigationViews';
 import { cn } from './lib/utils';
 
@@ -38,9 +36,9 @@ interface Chat {
 export default function App() {
   const [showWelcome, setShowWelcome] = useState(true);
   const [showAuth, setShowAuth] = useState(false);
-  const [user, setUser] = useState<any>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [authChecked, setAuthChecked] = useState(false);
+  const [user, setUser] = useState<any>({ uid: "guest_user", name: "Student", email: "student@orbit.edu", avatarUrl: null });
+  const [token, setToken] = useState<string | null>("guest_token");
+  const [authChecked, setAuthChecked] = useState(true);
   const [currentView, setCurrentView] = useState<'home' | 'history' | 'profile' | 'settings'>('home');
   const [theme, setTheme] = useState<'dark' | 'light' | 'white' | 'dim'>('dark');
   const [accentColor, setAccentColor] = useState<string>('#eab308'); // Default yellow
@@ -59,11 +57,16 @@ export default function App() {
   const currentChat = chats.find(c => c.id === currentChatId);
 
   useEffect(() => {
-    const savedToken = localStorage.getItem('orbit_token');
+    // Force guest user if no other session
+    const savedToken = localStorage.getItem('orbit_token') || 'guest_token';
     const savedUser = localStorage.getItem('orbit_user');
-    if (savedToken && savedUser) {
-      setToken(savedToken);
+    
+    if (savedUser) {
       setUser(JSON.parse(savedUser));
+      setToken(savedToken);
+    } else {
+      localStorage.setItem('orbit_token', 'guest_token');
+      localStorage.setItem('orbit_user', JSON.stringify({ uid: "guest_user", name: "Student", email: "student@orbit.edu", avatarUrl: null }));
     }
     setAuthChecked(true);
 
@@ -526,10 +529,12 @@ export default function App() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('orbit_token');
-    localStorage.removeItem('orbit_user');
-    setToken(null);
-    setUser(null);
+    const guestUser = { uid: "guest_user", name: "Student", email: "student@orbit.edu", avatarUrl: null };
+    setUser(guestUser);
+    setToken("guest_token");
+    localStorage.setItem('orbit_user', JSON.stringify(guestUser));
+    localStorage.setItem('orbit_token', 'guest_token');
+    setCurrentView('home');
   };
 
   const triggerConfetti = () => {
@@ -672,16 +677,11 @@ export default function App() {
               
               <button
                 onClick={() => {
-                  if (user) {
-                    setShowWelcome(false);
-                  } else {
-                    setShowWelcome(false);
-                    setShowAuth(true);
-                  }
+                  setShowWelcome(false);
                 }}
                 className="mt-8 px-10 py-4 bg-accent text-black font-black rounded-2xl shadow-[0_0_30px_rgba(234,179,8,0.3)] hover:shadow-[0_0_50px_rgba(234,179,8,0.5)] hover:scale-105 active:scale-95 transition-all flex items-center gap-2 mx-auto btn-animated"
               >
-                {user ? 'Open Dashboard' : 'Enter Orbit'} <Sparkles size={20} />
+                Enter Orbit <Sparkles size={20} />
               </button>
             </motion.div>
 
@@ -694,22 +694,6 @@ export default function App() {
               Version 3.1 Pro • Ultra Fast Mode
             </motion.div>
           </motion.div>
-        ) : showAuth && !user ? (
-          <Auth 
-            key="auth"
-            onSuccess={(token, user) => {
-              setToken(token);
-              setUser(user);
-              setShowAuth(false);
-              setShowWelcome(false);
-            }} 
-            onBack={() => setShowAuth(false)} 
-          />
-        ) : !user ? (
-          <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-6 text-center">
-             <h2 className="text-2xl font-bold mb-4">Please log in to continue</h2>
-             <button onClick={() => setShowAuth(true)} className="px-6 py-2 bg-yellow-400 text-black font-bold rounded-lg">Sign In</button>
-          </div>
         ) : (
           <motion.div 
             key="app"
