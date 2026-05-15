@@ -63,7 +63,8 @@ async function startServer() {
 
   const otps = new Map<string, { otp: string, expires: number }>();
 
-  app.use(express.json());
+  app.use(express.json({ limit: '50mb' }));
+  app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
   // Request logger for debugging
   app.use((req, res, next) => {
@@ -239,6 +240,42 @@ async function startServer() {
         avatarUrl: user.avatarUrl 
       });
     } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/ai/chat", authenticateToken, async (req: AuthRequest, res) => {
+    const { prompt, history, image, action, language } = req.body;
+    try {
+      const { chatWithGemini } = await import("./server/gemini-service");
+      
+      let finalPrompt = prompt;
+      if (action === 'summarize') {
+        const isPdf = image?.startsWith('data:application/pdf');
+        finalPrompt = `
+          You are a professional academic assistant and expert document analyst. 
+          Please provide a high-level, "Pro" summary of this ${isPdf ? 'PDF document' : 'image'}.
+          
+          CRITICAL INSTRUCTIONS:
+          1. OCR & EXTRACTION: If the document contains scanned text, images, or handwriting, perform a detailed OCR extraction to ensure no key information is missed.
+          2. LANGUAGE: You MUST provide the full summary translated into ${language || 'English'}.
+          3. STRUCTURE: Present the information in a highly structured, logical flow.
+          
+          Follow these strict formatting rules:
+          1. TOPIC HEADER: Start with the topic name as a main header (e.g., # TOPIC NAME).
+          2. HEADINGS: Use <u> tags to underline the Main Heading and all Sub-headings (e.g., ## <u>Main Heading</u>).
+          3. MEANINGS/DEFINITIONS: For any term or concept, write it as: "Term -> Meaning" on its own line.
+          4. POINT FORM: Do not write long paragraphs. Summarize all information into clear, professional point forms using bullet points (*) or numbered lists (1.).
+          5. KEY POINTS: Use arrows (->) for key takeaways.
+          6. SEPARATORS: Use dotted lines (....................) to separate major sections.
+          7. STYLE: Write like a professional expert. Be concise but thorough.
+        `;
+      }
+      
+      const responseText = await chatWithGemini(finalPrompt, history, image);
+      res.json({ text: responseText });
+    } catch (error: any) {
+      console.error("AI Route Error:", error);
       res.status(500).json({ error: error.message });
     }
   });
