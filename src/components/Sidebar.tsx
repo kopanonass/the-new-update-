@@ -88,12 +88,12 @@ export default function Sidebar({
             </motion.div>
             <span className="truncate">Orbit Student AI</span>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-zinc-500/10 rounded-full transition-colors text-zinc-500">
-            <X size={20} />
+          <button onClick={onClose} className="p-2 hover:bg-zinc-500/10 rounded-full transition-colors text-zinc-500 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none" aria-label="Close sidebar">
+            <X size={20} aria-hidden="true" />
           </button>
         </div>
 
-        <div className="p-4 space-y-2">
+        <nav className="p-4 space-y-2" aria-label="Main Navigation">
           {menuItems.map((item) => (
             <button
               key={item.id}
@@ -101,8 +101,9 @@ export default function Sidebar({
                 item.action();
                 onClose();
               }}
+              aria-current={currentView === item.id ? 'page' : undefined}
               className={cn(
-                "w-full flex items-center gap-3 py-3 px-4 rounded-xl transition-all font-semibold active:scale-[0.98]",
+                "w-full flex items-center gap-3 py-3 px-4 rounded-xl transition-all font-semibold active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950",
                 accentStyle === 'flow' && "accent-flow",
                 currentView === item.id && item.id !== 'home'
                   ? "bg-accent text-black shadow-lg shadow-accent/20"
@@ -111,16 +112,16 @@ export default function Sidebar({
                     : cn("text-zinc-500", itemHoverClasses[theme], "hover:text-accent")
               )}
             >
-              <item.icon size={20} />
+              <item.icon size={20} aria-hidden="true" />
               <span>{item.label}</span>
             </button>
           ))}
-        </div>
+        </nav>
 
-        <div className="flex-1 overflow-y-auto p-2 space-y-1 mt-4">
+        <nav className="flex-1 overflow-y-auto p-2 space-y-1 mt-4" aria-label="Recent Conversations">
           <div className="px-3 py-2 text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Sparkles size={12} />
+              <Sparkles size={12} aria-hidden="true" />
               Recent Conversations
             </div>
           </div>
@@ -138,20 +139,21 @@ export default function Sidebar({
                     onSelectChat(chat.id);
                     onClose();
                   }}
+                  aria-current={currentChatId === chat.id && currentView === 'home' ? 'true' : undefined}
                   className={cn(
-                    "w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all text-left group",
+                    "w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all text-left group focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none",
                     currentChatId === chat.id && currentView === 'home'
                       ? "bg-zinc-500/10 text-yellow-400"
                       : cn("text-zinc-500", itemHoverClasses[theme], "hover:text-zinc-200")
                   )}
                 >
-                  <MessageSquare size={16} className={cn(currentChatId === chat.id && currentView === 'home' ? "text-yellow-400" : "text-zinc-600 group-hover:text-zinc-400")} />
+                  <MessageSquare size={16} className={cn(currentChatId === chat.id && currentView === 'home' ? "text-yellow-400" : "text-zinc-600 group-hover:text-zinc-400")} aria-hidden="true" />
                   <span className="truncate text-xs font-bold">{chat.title}</span>
                 </button>
               ))
             )}
           </div>
-        </div>
+        </nav>
 
         <div className="p-4 border-t border-zinc-500/10 text-[10px] text-zinc-500 text-center font-black tracking-widest">
           <motion.span

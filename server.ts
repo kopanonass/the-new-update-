@@ -272,8 +272,13 @@ async function startServer() {
         `;
       }
       
-      const responseText = await chatWithGemini(finalPrompt, history, image);
-      res.json({ text: responseText });
+      let model = "gemini-3-flash-preview";
+      if (action === 'edit') {
+        model = "gemini-2.5-flash-image";
+      }
+
+      const aiResult = await chatWithGemini(finalPrompt, history, image, { model });
+      res.json(aiResult);
     } catch (error: any) {
       console.error("AI Route Error:", error);
       res.status(500).json({ error: error.message });

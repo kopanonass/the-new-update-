@@ -248,13 +248,8 @@ export default function App() {
       }
 
       const aiData = await aiResponse.json();
-      responseText = aiData.text;
-
-      if (action === 'edit' && image) {
-        // Since image editing was using a separate function generateImage (which I'm still figuring out the best server equivalent for), 
-        // I will keep it simple for now or use the same model.
-        // For now, I'll assume server returns text.
-      }
+      responseText = aiData.text || (aiData.image ? "I've processed the image for you!" : "");
+      responseImage = aiData.image;
 
       await fetch(`/api/chats/${chatId}/messages`, {
         method: 'POST',
@@ -717,9 +712,10 @@ export default function App() {
                 <div className="flex items-center gap-4">
                   <button 
                     onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                    className="p-2 hover:bg-zinc-800 rounded-lg transition-colors text-zinc-400 hover:text-yellow-400"
+                    className="p-2 hover:bg-zinc-800 rounded-lg transition-colors text-zinc-400 hover:text-yellow-400 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+                    aria-label={isSidebarOpen ? "Close sidebar" : "Open sidebar"}
                   >
-                    {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
+                    {isSidebarOpen ? <X size={20} aria-hidden="true" /> : <Menu size={20} aria-hidden="true" />}
                   </button>
                   
                   <button 
@@ -754,17 +750,19 @@ export default function App() {
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => setCurrentView('settings')}
-                    className="p-2 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-yellow-400 transition-colors"
+                    className="p-2 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-yellow-400 transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
                     title="Settings"
+                    aria-label="Settings"
                   >
-                    <Settings size={18} />
+                    <Settings size={18} aria-hidden="true" />
                   </button>
                   <button
                     onClick={handleLogout}
-                    className="p-2 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-red-400 transition-colors"
+                    className="p-2 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-red-400 transition-colors focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:outline-none"
                     title="Logout"
+                    aria-label="Logout"
                   >
-                    <LogOut size={18} />
+                    <LogOut size={18} aria-hidden="true" />
                   </button>
                 </div>
               </header>
@@ -968,6 +966,9 @@ export default function App() {
                     disabled={isLoading} 
                     accentStyle={accentStyle}
                   />
+                  <div className="sr-only" aria-live="polite">
+                    {isLoading ? "Orbit is processing your request" : ""}
+                  </div>
                 </div>
               )}
             </main>

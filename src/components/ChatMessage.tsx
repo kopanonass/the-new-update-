@@ -69,12 +69,12 @@ export default function ChatMessage({
             )}>
               <div className="rounded-2xl overflow-hidden border border-zinc-800 shadow-xl">
                 {image.startsWith('data:application/pdf') ? (
-                  <div className="w-full aspect-video bg-red-500/5 flex flex-col items-center justify-center text-red-500 gap-2">
-                    <FileText size={48} />
+                  <div className="w-full aspect-video bg-red-500/5 flex flex-col items-center justify-center text-red-500 gap-2" role="img" aria-label="PDF Document Attachment">
+                    <FileText size={48} aria-hidden="true" />
                     <span className="font-bold">PDF DOCUMENT</span>
                   </div>
                 ) : (
-                  <img src={image} alt="Content" className="w-full h-auto object-contain" />
+                  <img src={image} alt={`Uploaded content from ${isUser ? 'you' : 'AI'}`} className="w-full h-auto object-contain" />
                 )}
               </div>
               <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover/img:opacity-100 transition-all">
@@ -83,18 +83,20 @@ export default function ChatMessage({
                     {onAIEditImage && (
                       <button
                         onClick={() => onAIEditImage(image)}
-                        className="bg-black/60 backdrop-blur-md text-white px-3 py-2 rounded-xl hover:bg-purple-500 shadow-lg flex items-center gap-2 text-xs font-bold transition-all"
+                        className="bg-black/60 backdrop-blur-md text-white px-3 py-2 rounded-xl hover:bg-purple-500 shadow-lg flex items-center gap-2 text-xs font-bold transition-all focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:outline-none"
+                        aria-label="AI Edit this image"
                       >
-                        <Sparkles size={14} />
+                        <Sparkles size={14} aria-hidden="true" />
                         AI Edit
                       </button>
                     )}
                     {onEditImage && (
                       <button
                         onClick={() => onEditImage(image)}
-                        className="bg-black/60 backdrop-blur-md text-white px-3 py-2 rounded-xl hover:bg-yellow-400 hover:text-black shadow-lg flex items-center gap-2 text-xs font-bold transition-all"
+                        className="bg-black/60 backdrop-blur-md text-white px-3 py-2 rounded-xl hover:bg-yellow-400 hover:text-black shadow-lg flex items-center gap-2 text-xs font-bold transition-all focus-visible:ring-2 focus-visible:ring-yellow-400 focus-visible:outline-none"
+                        aria-label="Manually edit this image"
                       >
-                        <Edit2 size={14} />
+                        <Edit2 size={14} aria-hidden="true" />
                         Manual
                       </button>
                     )}
@@ -103,10 +105,11 @@ export default function ChatMessage({
                 {onDownloadImage && (
                   <button
                     onClick={() => onDownloadImage(image)}
-                    className="bg-black/60 backdrop-blur-md text-white p-2 rounded-xl hover:bg-blue-500 shadow-lg transition-all"
+                    className="bg-black/60 backdrop-blur-md text-white p-2 rounded-xl hover:bg-blue-500 shadow-lg transition-all focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
                     title="Download File"
+                    aria-label="Download this image"
                   >
-                    <Download size={16} />
+                    <Download size={16} aria-hidden="true" />
                   </button>
                 )}
               </div>
@@ -129,45 +132,50 @@ export default function ChatMessage({
                 {onDownloadPDF && (
                   <button
                     onClick={() => onDownloadPDF(content)}
-                    className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-zinc-100 bg-red-500/20 hover:bg-red-500 text-red-500 hover:text-white transition-all px-4 py-2 rounded-xl border border-red-500/30"
+                    className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-zinc-100 bg-red-500/20 hover:bg-red-500 text-red-500 hover:text-white transition-all px-4 py-2 rounded-xl border border-red-500/30 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:outline-none"
+                    aria-label="Download summary as PDF"
                   >
-                    <FileText size={14} />
+                    <FileText size={14} aria-hidden="true" />
                     PDF
                   </button>
                 )}
                 {onDownloadPPT && (
                   <button
                     onClick={() => onDownloadPPT(content)}
-                    className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-zinc-100 bg-orange-500/20 hover:bg-orange-500 text-orange-500 hover:text-white transition-all px-4 py-2 rounded-xl border border-orange-500/30"
+                    className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-zinc-100 bg-orange-500/20 hover:bg-orange-500 text-orange-500 hover:text-white transition-all px-4 py-2 rounded-xl border border-orange-500/30 focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:outline-none"
+                    aria-label="Download summary as PowerPoint"
                   >
-                    <Presentation size={14} />
+                    <Presentation size={14} aria-hidden="true" />
                     PowerPoint
                   </button>
                 )}
                 {onDownloadExcel && (
                   <button
                     onClick={() => onDownloadExcel(content)}
-                    className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-zinc-100 bg-green-500/20 hover:bg-green-500 text-green-500 hover:text-white transition-all px-4 py-2 rounded-xl border border-green-500/30"
+                    className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-zinc-100 bg-green-500/20 hover:bg-green-500 text-green-500 hover:text-white transition-all px-4 py-2 rounded-xl border border-green-500/30 focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:outline-none"
+                    aria-label="Download summary as Excel"
                   >
-                    <Table size={14} />
+                    <Table size={14} aria-hidden="true" />
                     Excel
                   </button>
                 )}
                 {onShareWhatsApp && (
                   <button
                     onClick={() => onShareWhatsApp(content)}
-                    className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-zinc-100 bg-green-600/20 hover:bg-green-600 text-green-600 hover:text-white transition-all px-4 py-2 rounded-xl border border-green-600/30"
+                    className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-zinc-100 bg-green-600/20 hover:bg-green-600 text-green-600 hover:text-white transition-all px-4 py-2 rounded-xl border border-green-600/30 focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:outline-none"
+                    aria-label="Share summary on WhatsApp"
                   >
-                    <MessageCircle size={14} />
+                    <MessageCircle size={14} aria-hidden="true" />
                     WhatsApp
                   </button>
                 )}
                 {onShareMore && (
                   <button
                     onClick={() => onShareMore(content)}
-                    className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-zinc-100 bg-blue-500/20 hover:bg-blue-500 text-blue-500 hover:text-white transition-all px-4 py-2 rounded-xl border border-blue-500/30"
+                    className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-zinc-100 bg-blue-500/20 hover:bg-blue-500 text-blue-500 hover:text-white transition-all px-4 py-2 rounded-xl border border-blue-500/30 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
+                    aria-label="Share summary via more options"
                   >
-                    <Share2 size={14} />
+                    <Share2 size={14} aria-hidden="true" />
                     Share
                   </button>
                 )}

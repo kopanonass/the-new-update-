@@ -104,8 +104,8 @@ export function ProfileView({ user, onBack, theme, onUpdateUser }: ProfileViewPr
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-center gap-4 border-b border-zinc-500/20 pb-6">
-        <button onClick={onBack} className="p-2 hover:bg-zinc-500/10 rounded-full transition-colors">
-          <ArrowLeft size={20} />
+        <button onClick={onBack} className="p-2 hover:bg-zinc-500/10 rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none" aria-label="Go back to home">
+          <ArrowLeft size={20} aria-hidden="true" />
         </button>
         <h1 className="text-3xl font-black tracking-tight">Your Profile</h1>
       </div>
@@ -128,18 +128,20 @@ export function ProfileView({ user, onBack, theme, onUpdateUser }: ProfileViewPr
             <div className="absolute -bottom-2 -right-2 flex flex-col gap-2">
               <button 
                 onClick={() => fileInputRef.current?.click()}
-                className="p-3 bg-zinc-100 text-black rounded-2xl shadow-xl hover:bg-white active:scale-90 transition-all border border-zinc-200"
+                className="p-3 bg-zinc-100 text-black rounded-2xl shadow-xl hover:bg-white active:scale-90 transition-all border border-zinc-200 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent"
                 title="Upload Photo"
+                aria-label="Upload profile photo"
               >
-                <Camera size={20} />
+                <Camera size={20} aria-hidden="true" />
               </button>
               {user?.avatarUrl && (
                 <button 
                   onClick={removeAvatar}
-                  className="p-3 bg-red-500 text-white rounded-2xl shadow-xl hover:bg-red-600 active:scale-90 transition-all border border-red-400"
+                  className="p-3 bg-red-500 text-white rounded-2xl shadow-xl hover:bg-red-600 active:scale-90 transition-all border border-red-400 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent"
                   title="Remove Photo"
+                  aria-label="Remove profile photo"
                 >
-                  <Trash2 size={20} />
+                  <Trash2 size={20} aria-hidden="true" />
                 </button>
               )}
             </div>
@@ -178,37 +180,45 @@ export function ProfileView({ user, onBack, theme, onUpdateUser }: ProfileViewPr
             {isChangingPassword ? (
               <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <input 
-                    type="password" 
-                    placeholder="New Password" 
-                    className="bg-black/20 border border-zinc-500/20 rounded-xl px-4 py-2 text-sm focus:border-yellow-400 outline-none"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                  />
-                  <input 
-                    type="password" 
-                    placeholder="Confirm Password" 
-                    className="bg-black/20 border border-zinc-500/20 rounded-xl px-4 py-2 text-sm focus:border-yellow-400 outline-none"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                  />
+                  <div className="space-y-1">
+                    <label htmlFor="new-password" className="sr-only">New Password</label>
+                    <input 
+                      id="new-password"
+                      type="password" 
+                      placeholder="New Password" 
+                      className="w-full bg-black/20 border border-zinc-500/20 rounded-xl px-4 py-2 text-sm focus:border-yellow-400 outline-none focus-visible:ring-1 focus-visible:ring-yellow-400"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label htmlFor="confirm-password" className="sr-only">Confirm Password</label>
+                    <input 
+                      id="confirm-password"
+                      type="password" 
+                      placeholder="Confirm Password" 
+                      className="w-full bg-black/20 border border-zinc-500/20 rounded-xl px-4 py-2 text-sm focus:border-yellow-400 outline-none focus-visible:ring-1 focus-visible:ring-yellow-400"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                    />
+                  </div>
                 </div>
                 <div className="flex gap-2">
                   <button 
                     onClick={handlePasswordReset}
                     disabled={loading}
-                    className="bg-yellow-400 text-black px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-yellow-500 transition-colors"
+                    className="bg-yellow-400 text-black px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-yellow-500 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent"
                   >
-                    {loading ? 'Updating...' : 'Save Password'} <Check size={16} />
+                    {loading ? 'Updating...' : 'Save Password'} <Check size={16} aria-hidden="true" />
                   </button>
                   <button 
                     onClick={() => setIsChangingPassword(false)}
-                    className="text-zinc-500 px-4 py-2 rounded-xl text-sm font-bold hover:bg-zinc-500/10 transition-colors"
+                    className="text-zinc-500 px-4 py-2 rounded-xl text-sm font-bold hover:bg-zinc-500/10 transition-colors focus-visible:ring-2 focus-visible:ring-zinc-500"
                   >
                     Cancel
                   </button>
                 </div>
-                {message && <p className="text-xs text-yellow-500 font-bold">{message}</p>}
+                {message && <p className="text-xs text-yellow-500 font-bold" aria-live="polite">{message}</p>}
               </div>
             ) : (
               <button 
@@ -290,8 +300,8 @@ export function SettingsView({
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-center gap-4 border-b border-zinc-500/20 pb-6">
-        <button onClick={onBack} className="p-2 hover:bg-zinc-500/10 rounded-full transition-colors">
-          <ArrowLeft size={20} />
+        <button onClick={onBack} className="p-2 hover:bg-zinc-500/10 rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none" aria-label="Go back to home">
+          <ArrowLeft size={20} aria-hidden="true" />
         </button>
         <h1 className="text-3xl font-black tracking-tight">Personalization</h1>
       </div>
@@ -438,8 +448,10 @@ function Toggle({ label, checked, onToggle }: { label: string, checked: boolean,
       <span className="text-sm font-medium">{label}</span>
       <button 
         onClick={onToggle}
+        aria-label={label}
+        aria-pressed={checked}
         className={cn(
-          "w-10 h-5 rounded-full transition-all relative",
+          "w-10 h-5 rounded-full transition-all relative focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2",
           checked ? "bg-accent" : "bg-zinc-500/30"
         )}
       >
@@ -463,8 +475,8 @@ export function HistoryView({ chats, onSelectChat, onBack, theme }: HistoryViewP
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-center gap-4 border-b border-zinc-500/20 pb-6">
-        <button onClick={onBack} className="p-2 hover:bg-zinc-500/10 rounded-full transition-colors">
-          <ArrowLeft size={20} />
+        <button onClick={onBack} className="p-2 hover:bg-zinc-500/10 rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none" aria-label="Go back to home">
+          <ArrowLeft size={20} aria-hidden="true" />
         </button>
         <h1 className="text-3xl font-black tracking-tight">Chat History</h1>
       </div>

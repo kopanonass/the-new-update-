@@ -270,28 +270,32 @@ export default function ChatInput({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="p-2 text-zinc-400 hover:text-yellow-400 hover:bg-white/5 rounded-xl transition-all"
+              className="p-2 text-zinc-400 hover:text-yellow-400 hover:bg-white/5 rounded-xl transition-all focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
               title="Upload Image or PDF"
+              aria-label="Upload Image or PDF"
             >
-              <ImageIcon size={22} />
+              <ImageIcon size={22} aria-hidden="true" />
             </button>
             <button
               type="button"
-              className="p-2 text-zinc-400 hover:text-yellow-400 hover:bg-white/5 rounded-xl transition-all"
+              className="p-2 text-zinc-400 hover:text-yellow-400 hover:bg-white/5 rounded-xl transition-all focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
               title="Scan QR Code"
+              aria-label="Scan QR Code"
             >
-              <QrCode size={22} />
+              <QrCode size={22} aria-hidden="true" />
             </button>
             <button
               type="button"
               onClick={toggleListening}
               className={cn(
-                "p-2 rounded-xl transition-all relative",
+                "p-2 rounded-xl transition-all relative focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none",
                 isListening ? "text-red-500 bg-red-500/10" : "text-zinc-400 hover:text-yellow-400 hover:bg-white/5"
               )}
               title={isListening ? "Stop Listening" : "Voice to Text"}
+              aria-label={isListening ? "Stop voice recognition" : "Start voice recognition"}
+              aria-pressed={isListening}
             >
-              {isListening ? <MicOff size={22} /> : <Mic size={22} />}
+              {isListening ? <MicOff size={22} aria-hidden="true" /> : <Mic size={22} aria-hidden="true" />}
               {isListening && (
                 <motion.div
                   layoutId="mic-pulse"
@@ -301,7 +305,9 @@ export default function ChatInput({
             </button>
           </div>
 
+          <label htmlFor="chat-message-input" className="sr-only">Type your message</label>
           <textarea
+            id="chat-message-input"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={(e) => {
@@ -311,7 +317,7 @@ export default function ChatInput({
               }
             }}
             placeholder="Ask Orbit Collage Student AI anything..."
-            className="flex-1 bg-transparent border-none focus:ring-0 text-zinc-100 placeholder-zinc-500 py-3 px-2 resize-none max-h-40 min-h-[44px]"
+            className="flex-1 bg-transparent border-none focus:ring-0 text-zinc-100 placeholder-zinc-500 py-3 px-2 resize-none max-h-40 min-h-[44px] focus-visible:bg-white/5 transition-colors rounded-lg"
             rows={1}
           />
 
@@ -320,8 +326,9 @@ export default function ChatInput({
             whileTap={message.trim() || image ? { scale: 0.95 } : {}}
             onClick={handleSend}
             disabled={(!message.trim() && !image) || disabled}
+            aria-label="Send message"
             className={cn(
-              "p-3 rounded-xl transition-all flex items-center justify-center relative overflow-hidden btn-animated",
+              "p-3 rounded-xl transition-all flex items-center justify-center relative overflow-hidden btn-animated focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900",
               message.trim() || image
                 ? "bg-accent text-black shadow-lg shadow-accent/20"
                 : "bg-white/5 text-zinc-600 cursor-not-allowed",
@@ -329,12 +336,13 @@ export default function ChatInput({
             )}
           >
             {disabled ? (
-              <Loader2 size={20} className="animate-spin" />
+              <Loader2 size={20} className="animate-spin" aria-hidden="true" />
             ) : (
               <motion.div
                 initial={false}
                 animate={message.trim() || image ? { x: [0, 2, 0] } : {}}
                 transition={{ duration: 1.5, repeat: Infinity }}
+                aria-hidden="true"
               >
                 <Send size={20} />
               </motion.div>

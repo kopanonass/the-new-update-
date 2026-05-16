@@ -1,18 +1,33 @@
 import { GoogleGenAI } from "@google/genai";
 
-const getApiKey = () => {
-  return process.env.GEMINI_API_KEY;
+let aiInstance: GoogleGenAI | null = null;
+
+const getAiClient = () => {
+  if (!aiInstance) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error("GEMINI_API_KEY is missing in server environment. Please check Settings > Secrets.");
+    }
+    aiInstance = new GoogleGenAI({ 
+      apiKey,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build',
+        }
+      }
+    });
+  }
+  return aiInstance;
 };
 
-const ai = new GoogleGenAI({ 
-  apiKey: getApiKey() || 'MISSING_KEY' 
-});
-
-export async function chatWithGemini(prompt: string, history: { role: 'user' | 'model', parts: { text: string }[] }[] = [], base64Data?: string) {
-  if (!getApiKey()) {
-    throw new Error("GEMINI_API_KEY is missing in server environment");
-  }
+export async function chatWithGemini(
+  prompt: string, 
+  history: { role: 'user' | 'model', parts: { text: string }[] }[] = [], 
+  base64Data?: string,
+  options: { model?: string } = {}
+) {
   try {
+    const ai = getAiClient();
     const parts: any[] = [{ text: prompt }];
 
     if (base64Data) {
@@ -25,7 +40,7 @@ export async function chatWithGemini(prompt: string, history: { role: 'user' | '
         }
       }
 
-      parts.unshift({
+      parts.push({
         inlineData: {
           data: base64Data.split(',')[1],
           mimeType: mimeType,
@@ -33,15 +48,26 @@ export async function chatWithGemini(prompt: string, history: { role: 'user' | '
       });
     }
 
+    const modelName = options.model || "gemini-3-flash-preview";
+
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
+      model: modelName,
       contents: [...history, { role: 'user', parts: parts }],
       config: {
         systemInstruction: "You are Orbit College Student AI, powered by NanoBanana Pro. You assist students with their academic needs. You are professional, helpful, and concise."
       }
     });
     
-    return response.text;
+    // Check for image content (Nano Banana Pro mode)
+    const imagePart = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+    if (imagePart?.inlineData) {
+      return {
+        text: response.text,
+        image: `data:${imagePart.inlineData.mimeType};base64,${imagePart.inlineData.data}`
+      };
+    }
+
+    return { text: response.text };
   } catch (error) {
     console.error("Gemini Chat Error:", error);
     throw error;
