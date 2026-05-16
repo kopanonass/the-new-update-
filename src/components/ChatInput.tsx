@@ -135,7 +135,10 @@ export default function ChatInput({
 
   return (
     <div className="max-w-5xl mx-auto w-full p-4 relative">
-      <div className="relative flex flex-col bg-zinc-900/50 dark:bg-zinc-950/40 backdrop-blur-3xl rounded-[2rem] transition-all group border border-zinc-500/20 focus-within:border-yellow-400/50 shadow-2xl">
+      <div className={cn(
+        "relative flex flex-col bg-zinc-900/50 dark:bg-zinc-950/40 backdrop-blur-3xl rounded-[2rem] transition-all group border border-zinc-500/20 shadow-2xl rainbow-glow",
+        "focus-within:border-transparent"
+      )}>
         {image && (
           <div className="p-4 flex flex-col gap-4 border-b border-white/5">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
